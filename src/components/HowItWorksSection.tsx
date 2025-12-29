@@ -1,4 +1,7 @@
+import { motion, useScroll, useTransform } from "framer-motion";
 import { FileText, CreditCard, PenTool, CheckCircle, Download } from "lucide-react";
+import { useRef } from "react";
+import { AnimatedSection } from "./AnimatedSection";
 
 const steps = [
   {
@@ -34,10 +37,28 @@ const steps = [
 ];
 
 const HowItWorksSection = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+
+  const lineProgress = useTransform(scrollYProgress, [0.1, 0.9], ["0%", "100%"]);
+
   return (
-    <section id="how-it-works" className="py-20">
+    <section id="how-it-works" ref={containerRef} className="py-24 relative overflow-hidden">
+      {/* Background parallax elements */}
+      <motion.div
+        className="absolute left-0 top-1/4 w-64 h-64 bg-accent/10 rounded-full blur-3xl"
+        style={{ y: useTransform(scrollYProgress, [0, 1], [100, -100]) }}
+      />
+      <motion.div
+        className="absolute right-0 bottom-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"
+        style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
+      />
+
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <AnimatedSection className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block px-4 py-2 bg-accent/10 rounded-full text-accent font-medium text-sm mb-4">
             Простой процесс
           </span>
@@ -47,36 +68,64 @@ const HowItWorksSection = () => {
           <p className="text-lg text-muted-foreground">
             5 простых шагов от заявки до успешной сдачи работы
           </p>
-        </div>
+        </AnimatedSection>
 
         <div className="relative">
-          {/* Connection Line */}
-          <div className="hidden lg:block absolute top-24 left-[10%] right-[10%] h-1 bg-gradient-to-r from-primary via-accent to-primary rounded-full" />
+          {/* Animated Connection Line */}
+          <div className="hidden lg:block absolute top-24 left-[10%] right-[10%] h-1 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-primary via-accent to-primary rounded-full"
+              style={{ width: lineProgress }}
+            />
+          </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8">
             {steps.map((step, index) => (
-              <div
+              <motion.div
                 key={step.number}
-                className="relative text-center animate-fade-up"
-                style={{ animationDelay: `${index * 0.15}s` }}
+                initial={{ opacity: 0, y: 60 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: index * 0.15,
+                  type: "spring",
+                  stiffness: 100,
+                }}
+                className="relative text-center"
               >
                 {/* Step Circle */}
-                <div className="relative mx-auto mb-6">
-                  <div className="w-20 h-20 rounded-full gradient-hero flex items-center justify-center shadow-glow mx-auto">
+                <motion.div 
+                  className="relative mx-auto mb-6"
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <motion.div
+                    className="w-20 h-20 rounded-full gradient-hero flex items-center justify-center shadow-glow mx-auto relative z-10"
+                    whileInView={{
+                      boxShadow: [
+                        "0 0 20px rgba(59, 130, 246, 0.3)",
+                        "0 0 40px rgba(59, 130, 246, 0.5)",
+                        "0 0 20px rgba(59, 130, 246, 0.3)",
+                      ],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                  >
                     <step.icon className="w-8 h-8 text-primary-foreground" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center shadow-lg">
+                  </motion.div>
+                  <motion.div
+                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center shadow-lg z-20"
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
+                  >
                     {step.number.replace("0", "")}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
 
-                <h3 className="text-lg font-bold text-foreground mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+              </motion.div>
             ))}
           </div>
         </div>
