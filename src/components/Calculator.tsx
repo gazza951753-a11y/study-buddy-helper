@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -41,10 +42,10 @@ const deadlines = [
 ];
 
 const Calculator = () => {
+  const navigate = useNavigate();
   const [workType, setWorkType] = useState("");
   const [subject, setSubject] = useState("");
   const [deadline, setDeadline] = useState("");
-
   const price = useMemo(() => {
     if (!workType || !subject || !deadline) return null;
 
@@ -143,13 +144,24 @@ const Calculator = () => {
       </div>
 
       {/* CTA Button */}
-      <Button variant="hero" size="lg" className="w-full mt-6">
+      <Button 
+        variant="hero" 
+        size="lg" 
+        className="w-full mt-6"
+        onClick={() => {
+          const params = new URLSearchParams();
+          if (workType) params.set("type", workType);
+          if (subject) params.set("subject", subject);
+          if (deadline) params.set("deadline", deadline);
+          navigate(`/payment?${params.toString()}`);
+        }}
+      >
         Оформить заказ
         <ArrowRight className="w-5 h-5" />
       </Button>
 
       <p className="text-center text-xs text-muted-foreground mt-4">
-        Бесплатная консультация • Без предоплаты
+        Предоплата через ЮKassa • СБП
       </p>
     </div>
   );
