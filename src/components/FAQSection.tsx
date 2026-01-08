@@ -39,7 +39,7 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="py-20 pb-32">
+    <section id="faq" className="py-20 pb-48">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center max-w-3xl mx-auto mb-16"
