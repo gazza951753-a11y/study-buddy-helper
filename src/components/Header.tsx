@@ -1,9 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Menu, X, GraduationCap } from "lucide-react";
+import { Menu, X, GraduationCap, User } from "lucide-react";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 const Header = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { label: "Услуги", href: "#services" },
@@ -42,9 +61,16 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Войти
-            </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
+                <User className="w-4 h-4 mr-2" />
+                Личный кабинет
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
+                Войти
+              </Button>
+            )}
             <Button variant="hero" size="sm">
               Заказать работу
             </Button>
@@ -74,9 +100,16 @@ const Header = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 mt-4 px-4">
-                <Button variant="outline" className="w-full">
-                  Войти
-                </Button>
+                {user ? (
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Личный кабинет
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>
+                    Войти
+                  </Button>
+                )}
                 <Button variant="hero" className="w-full">
                   Заказать работу
                 </Button>
