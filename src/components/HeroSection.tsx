@@ -26,7 +26,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section ref={containerRef} className="relative min-h-screen pt-24 pb-16 overflow-hidden">
+    <section ref={containerRef} className="relative min-h-screen pt-24 pb-16 overflow-hidden bg-background">
       {/* Animated Background */}
       <motion.div className="absolute inset-0 -z-10" style={{ y: backgroundY }}>
         <motion.div
@@ -39,7 +39,7 @@ const HeroSection = () => {
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl"
+          className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.3, 1],
             x: [0, -40, 0],
@@ -93,18 +93,12 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight"
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground"
             >
               Сдай сессию{" "}
-              <motion.span
-                className="text-gradient inline-block"
-                animate={{ 
-                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                }}
-                transition={{ duration: 5, repeat: Infinity }}
-              >
+              <span className="text-primary">
                 без стресса
-              </motion.span>
+              </span>
               <br />
               и в срок
             </motion.h1>
@@ -119,7 +113,7 @@ const HeroSection = () => {
               контрольные. Индивидуальный подход к каждому заказу.
             </motion.p>
 
-            {/* Benefits */}
+            {/* Benefits - using success color only for checkmarks */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -134,13 +128,13 @@ const HeroSection = () => {
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-center gap-2 text-foreground"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                  <CheckCircle2 className="w-5 h-5 text-success" />
                   <span className="font-medium">{benefit}</span>
                 </motion.div>
               ))}
             </motion.div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - single accent color */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -148,8 +142,8 @@ const HeroSection = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="hero" size="xl" onClick={scrollToCalculator}>
-                  Рассчитать стоимость
+                <Button size="xl" onClick={scrollToCalculator}>
+                  Оформить заказ
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>

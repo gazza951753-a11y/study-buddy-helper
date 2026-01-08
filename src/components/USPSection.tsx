@@ -14,51 +14,39 @@ const features = [
     icon: Shield,
     title: "100% конфиденциальность",
     description: "Ваши данные надёжно защищены. Никто не узнает о заказе.",
-    color: "from-blue-500 to-cyan-500",
   },
   {
     icon: Clock,
     title: "Точно в срок",
     description: "Сдаём работы вовремя, даже в сжатые сроки.",
-    color: "from-purple-500 to-pink-500",
   },
   {
     icon: Award,
     title: "Проверенные авторы",
     description: "Более 500 экспертов с профильным образованием.",
-    color: "from-orange-500 to-yellow-500",
   },
   {
     icon: MessageCircle,
     title: "Связь 24/7",
     description: "Поддержка всегда на связи в мессенджерах.",
-    color: "from-green-500 to-emerald-500",
   },
   {
     icon: RefreshCw,
     title: "Бесплатные правки",
     description: "Доработки по замечаниям преподавателя бесплатно.",
-    color: "from-red-500 to-orange-500",
   },
   {
     icon: CreditCard,
     title: "Оплата частями",
     description: "Платите после проверки или по частям.",
-    color: "from-indigo-500 to-purple-500",
   },
 ];
 
 const USPSection = () => {
   return (
-    <section id="services" className="py-24 bg-secondary/30 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 -z-10">
-        <motion.div
-          className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 12, repeat: Infinity }}
-        />
-      </div>
+    <section id="services" className="py-24 bg-card relative overflow-hidden">
+      {/* Subtle background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-card" />
 
       <div className="container mx-auto px-4">
         <AnimatedSection className="text-center max-w-3xl mx-auto mb-16">
@@ -75,24 +63,25 @@ const USPSection = () => {
         </AnimatedSection>
 
         <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" staggerDelay={0.1}>
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <StaggerItem key={feature.title}>
               <motion.div
-                className="group relative bg-card rounded-2xl p-6 sm:p-8 border border-border overflow-hidden h-full"
+                className="group relative bg-background rounded-2xl p-6 sm:p-8 border border-border overflow-hidden h-full"
                 whileHover={{ y: -8, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 {/* Hover gradient overlay */}
                 <motion.div
-                  className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
+                  className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 />
                 
+                {/* All icons use primary color for consistency */}
                 <motion.div
-                  className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 relative z-10`}
+                  className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-6 relative z-10"
                   whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <feature.icon className="w-7 h-7 text-white" />
+                  <feature.icon className="w-7 h-7 text-primary-foreground" />
                 </motion.div>
                 
                 <h3 className="text-xl font-bold text-foreground mb-3 relative z-10">
