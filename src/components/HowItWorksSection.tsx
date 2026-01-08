@@ -46,20 +46,10 @@ const HowItWorksSection = () => {
   const lineProgress = useTransform(scrollYProgress, [0.1, 0.9], ["0%", "100%"]);
 
   return (
-    <section id="how-it-works" ref={containerRef} className="py-24 relative overflow-hidden">
-      {/* Background parallax elements */}
-      <motion.div
-        className="absolute left-0 top-1/4 w-64 h-64 bg-accent/10 rounded-full blur-3xl"
-        style={{ y: useTransform(scrollYProgress, [0, 1], [100, -100]) }}
-      />
-      <motion.div
-        className="absolute right-0 bottom-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"
-        style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
-      />
-
+    <section id="how-it-works" ref={containerRef} className="py-24 bg-background relative overflow-hidden">
       <div className="container mx-auto px-4">
         <AnimatedSection className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block px-4 py-2 bg-accent/10 rounded-full text-accent font-medium text-sm mb-4">
+          <span className="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium text-sm mb-4">
             Простой процесс
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
@@ -72,9 +62,9 @@ const HowItWorksSection = () => {
 
         <div className="relative">
           {/* Animated Connection Line */}
-          <div className="hidden lg:block absolute top-24 left-[10%] right-[10%] h-1 bg-muted rounded-full overflow-hidden">
+          <div className="hidden lg:block absolute top-24 left-[10%] right-[10%] h-1 bg-border rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary via-accent to-primary rounded-full"
+              className="h-full bg-primary rounded-full"
               style={{ width: lineProgress }}
             />
           </div>
@@ -101,12 +91,12 @@ const HowItWorksSection = () => {
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <motion.div
-                    className="w-20 h-20 rounded-full gradient-hero flex items-center justify-center shadow-glow mx-auto relative z-10"
+                    className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-glow mx-auto relative z-10"
                     whileInView={{
                       boxShadow: [
-                        "0 0 20px rgba(59, 130, 246, 0.3)",
-                        "0 0 40px rgba(59, 130, 246, 0.5)",
-                        "0 0 20px rgba(59, 130, 246, 0.3)",
+                        "0 0 20px hsl(229 100% 62% / 0.2)",
+                        "0 0 40px hsl(229 100% 62% / 0.4)",
+                        "0 0 20px hsl(229 100% 62% / 0.2)",
                       ],
                     }}
                     transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
@@ -114,7 +104,7 @@ const HowItWorksSection = () => {
                     <step.icon className="w-8 h-8 text-primary-foreground" />
                   </motion.div>
                   <motion.div
-                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center shadow-lg z-20"
+                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-secondary text-secondary-foreground text-sm font-bold flex items-center justify-center shadow-lg z-20"
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
