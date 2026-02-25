@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  GraduationCap, 
-  User, 
-  Settings, 
-  Package, 
-  Bell, 
-  Gift, 
-  Link2, 
+import {
+  GraduationCap,
+  User,
+  Settings,
+  Package,
+  Bell,
+  Gift,
+  Link2,
   LogOut,
   Edit2,
   Save,
@@ -39,35 +39,97 @@ const Dashboard = () => {
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [authChecked, setAuthChecked] = useState(false);
-  
+
   const [editData, setEditData] = useState({
     username: "",
     phone: "",
     telegram_username: "",
   });
 
+  const getFallbackUsername = (sessionUser: SupabaseUser) => {
+    const metadataUsername = sessionUser.user_metadata?.username;
+    if (typeof metadataUsername === "string" && metadataUsername.trim()) {
+      return metadataUsername.trim();
+    }
+
+    const emailPrefix = sessionUser.email?.split("@")[0];
+    if (emailPrefix && emailPrefix.trim()) {
+      return emailPrefix.trim();
+    }
+
+    return "Пользователь";
+  };
+
+  const createProfile = async (sessionUser: SupabaseUser) => {
+    const payload = {
+      user_id: sessionUser.id,
+      email: sessionUser.email ?? "",
+      username: getFallbackUsername(sessionUser),
+      phone: typeof sessionUser.user_metadata?.phone === "string" ? sessionUser.user_metadata.phone : null,
+      telegram_username: typeof sessionUser.user_metadata?.telegram_username === "string" ? sessionUser.user_metadata.telegram_username : null,
+    };
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    setProfile(data);
+    setEditData({
+      username: data.username,
+      phone: data.phone || "",
+      telegram_username: data.telegram_username || "",
+    });
+  };
+
+  const fetchProfile = async (sessionUser: SupabaseUser) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", sessionUser.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        await createProfile(sessionUser);
+        return;
+      }
+
+      setProfile(data);
+      setEditData({
+        username: data.username,
+        phone: data.phone || "",
+        telegram_username: data.telegram_username || "",
+      });
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      toast.error("Не удалось загрузить профиль");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
-    const safetyTimer = window.setTimeout(() => {
-      if (!isMounted) return;
-      setLoading(false);
-      setAuthChecked(true);
-    }, 4000);
 
     const handleSession = (sessionUser: SupabaseUser | null) => {
       if (!isMounted) return;
 
       setUser(sessionUser);
+      setAuthChecked(true);
 
-      if (sessionUser) {
+      if (!sessionUser) {
         setLoading(false);
-        setAuthChecked(true);
-          fetchProfile(sessionUser.id);
         return;
       }
 
       setLoading(false);
-      setAuthChecked(true);
+      fetchProfile(sessionUser);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -93,11 +155,10 @@ const Dashboard = () => {
         if (!isMounted) return;
         setLoading(false);
         setAuthChecked(true);
-        });
+      });
 
     return () => {
       isMounted = false;
-      window.clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, []);
@@ -108,31 +169,6 @@ const Dashboard = () => {
       navigate("/auth");
     }
   }, [authChecked, loading, navigate, user]);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (data) {
-        setProfile(data);
-        setEditData({
-          username: data.username,
-          phone: data.phone || "",
-          telegram_username: data.telegram_username || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -199,7 +235,7 @@ const Dashboard = () => {
                 Edu<span className="text-primary">Help</span>
               </span>
             </a>
-            
+
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground hidden md:block">
                 {profile?.email || user?.email}
@@ -366,7 +402,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="text-muted-foreground">
-                    Бонусы начисляются за каждый оплаченный заказ и могут быть использованы 
+                    Бонусы начисляются за каждый оплаченный заказ и могут быть использованы
                     для оплаты до 30% стоимости следующих заказов.
                   </p>
                 </div>
@@ -410,8 +446,9 @@ const Dashboard = () => {
                         Для смены пароля мы отправим вам ссылку на email
                       </p>
                       <Button variant="outline" onClick={async () => {
-                        if (profile?.email) {
-                          await supabase.auth.resetPasswordForEmail(profile.email, {
+                        const targetEmail = profile?.email || user?.email;
+                        if (targetEmail) {
+                          await supabase.auth.resetPasswordForEmail(targetEmail, {
                             redirectTo: `${window.location.origin}/auth`,
                           });
                           toast.success("Ссылка для сброса пароля отправлена на email");
