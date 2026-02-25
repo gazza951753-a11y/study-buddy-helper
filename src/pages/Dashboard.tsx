@@ -46,25 +46,47 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
+    const safetyTimer = window.setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setUser(session?.user ?? null);
-        if (!session?.user) {
-          navigate("/auth");
+
+        if (session?.user) {
+          setLoading(false);
+          fetchProfile(session.user.id);
+          return;
         }
+
+        setLoading(false);
+        navigate("/auth");
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
-      } else {
-        navigate("/auth");
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (session?.user) {
+          setUser(session.user);
+          setLoading(false);
+          fetchProfile(session.user.id);
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        setLoading(false);
+        navigate("/auth");
+      })
+      .catch((error) => {
+        console.error("Error getting session:", error);
+        setLoading(false);
+      });
+
+    return () => {
+      window.clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const fetchProfile = async (userId: string) => {
@@ -160,7 +182,7 @@ const Dashboard = () => {
             
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground hidden md:block">
-                {profile?.email}
+                {profile?.email || user?.email}
               </span>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
@@ -225,8 +247,8 @@ const Dashboard = () => {
                         <User className="w-10 h-10 text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-semibold">{profile?.username}</h2>
-                        <p className="text-muted-foreground">{profile?.email}</p>
+                        <h2 className="text-xl font-semibold">{profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Пользователь"}</h2>
+                        <p className="text-muted-foreground">{profile?.email || user?.email}</p>
                       </div>
                     </div>
 
@@ -239,13 +261,13 @@ const Dashboard = () => {
                             onChange={(e) => setEditData({ ...editData, username: e.target.value })}
                           />
                         ) : (
-                          <p className="mt-1 text-foreground">{profile?.username}</p>
+                          <p className="mt-1 text-foreground">{profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "-"}</p>
                         )}
                       </div>
 
                       <div>
                         <Label>Email</Label>
-                        <p className="mt-1 text-foreground">{profile?.email}</p>
+                        <p className="mt-1 text-foreground">{profile?.email || user?.email}</p>
                       </div>
 
                       <div>
