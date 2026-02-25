@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import StudentDashboard from "./pages/StudentDashboard";
+import AuthorDashboard from "./pages/AuthorDashboard";
+import OrderDetail from "./pages/OrderDetail";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 
@@ -20,9 +23,16 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          {/* Role-based dashboard router */}
           <Route path="/dashboard" element={<Dashboard />} />
+          {/* Student cabinet */}
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          {/* Author cabinet */}
+          <Route path="/author-dashboard" element={<AuthorDashboard />} />
+          {/* Order detail page with chat */}
+          <Route path="/order/:id" element={<OrderDetail />} />
+          {/* Legacy payment page */}
           <Route path="/payment" element={<Payment />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

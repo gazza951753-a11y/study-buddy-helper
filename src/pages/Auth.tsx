@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, ArrowLeft, BookOpen, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import UserAgreementDialog from "@/components/UserAgreementDialog";
@@ -30,7 +30,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
-  
+  const [selectedRole, setSelectedRole] = useState<"student" | "author">("student");
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -76,9 +77,7 @@ const Auth = () => {
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
-            if (err.path[0]) {
-              fieldErrors[err.path[0] as string] = err.message;
-            }
+            if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
           });
           setErrors(fieldErrors);
           setLoading(false);
@@ -113,9 +112,7 @@ const Auth = () => {
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
-            if (err.path[0]) {
-              fieldErrors[err.path[0] as string] = err.message;
-            }
+            if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
           });
           setErrors(fieldErrors);
           setLoading(false);
@@ -131,6 +128,7 @@ const Auth = () => {
               username: formData.username,
               phone: formData.phone || null,
               telegram_username: formData.telegram_username || null,
+              role: selectedRole,
             },
           },
         });
@@ -148,7 +146,7 @@ const Auth = () => {
         toast.success("Регистрация успешна!");
         navigate("/dashboard");
       }
-    } catch (error) {
+    } catch {
       toast.error("Произошла ошибка");
     } finally {
       setLoading(false);
@@ -202,6 +200,45 @@ const Auth = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Role selection — only on registration */}
+            {!isLogin && (
+              <div>
+                <Label className="mb-2 block">Я регистрируюсь как *</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("student")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      selectedRole === "student"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    <BookOpen className="w-6 h-6" />
+                    <span className="font-medium text-sm">Студент</span>
+                    <span className="text-xs text-center leading-tight opacity-70">
+                      Заказываю работы
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("author")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      selectedRole === "author"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    <PenLine className="w-6 h-6" />
+                    <span className="font-medium text-sm">Автор</span>
+                    <span className="text-xs text-center leading-tight opacity-70">
+                      Выполняю работы
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!isLogin && (
               <div>
                 <Label htmlFor="username">Логин *</Label>
