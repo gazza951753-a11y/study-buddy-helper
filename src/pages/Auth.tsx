@@ -43,19 +43,22 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // Redirect already-authenticated users away from the auth page
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate("/dashboard", { replace: true });
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session?.user) {
-          navigate("/dashboard");
+        // Only auto-redirect on SIGNED_IN from external triggers (e.g. email confirmation link)
+        // Normal sign-in/sign-up navigates explicitly after the form submit
+        if (event === "SIGNED_IN" && session?.user) {
+          navigate("/dashboard", { replace: true });
         }
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/dashboard");
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);

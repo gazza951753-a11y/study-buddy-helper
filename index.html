@@ -23,7 +23,7 @@
           var path = decoded.slice(0, qIdx > -1 ? qIdx : undefined);
           var query = qIdx > -1 ? '?' + decoded.slice(qIdx + 3) : '';
           history.replaceState(null, null,
-            window.location.pathname.split('/').slice(0, 2).join('/') + '/' + path + query + window.location.hash
+            window.location.pathname.split('/').slice(0, 2).join('/') + path + query + window.location.hash
           );
         }
       })();

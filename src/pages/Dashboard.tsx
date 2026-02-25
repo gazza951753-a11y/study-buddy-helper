@@ -19,11 +19,18 @@ const Dashboard = () => {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, is_admin")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+      // Retry up to 5 times with 800ms delay — profile may not be created yet
+      // immediately after signup (Supabase trigger runs asynchronously)
+      let profile = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("role, is_admin")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data) { profile = data; break; }
+        await new Promise(r => setTimeout(r, 800));
+      }
 
       if (!profile) {
         navigate("/auth");
