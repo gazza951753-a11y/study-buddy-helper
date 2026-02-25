@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Accordion,
@@ -5,8 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { supabase } from "@/integrations/supabase/client";
 
-const faqs = [
+type FaqItem = { question: string; answer: string };
+
+const DEFAULT_FAQS: FaqItem[] = [
   {
     question: "Как происходит оплата и какие гарантии безопасности?",
     answer: "Мы работаем по предоплате через проверенные платёжные системы: ЮMoney и СБП. Это защищает обе стороны — вы получаете чек и подтверждение платежа, а мы гарантируем выполнение заказа. Для крупных проектов возможна поэтапная оплата. Все транзакции безопасны и конфиденциальны.",
@@ -38,6 +42,21 @@ const faqs = [
 ];
 
 const FAQSection = () => {
+  const [faqs, setFaqs] = useState<FaqItem[]>(DEFAULT_FAQS);
+
+  useEffect(() => {
+    supabase
+      .from("site_content")
+      .select("value")
+      .eq("key", "faq")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && Array.isArray(data.value) && data.value.length > 0) {
+          setFaqs(data.value as FaqItem[]);
+        }
+      });
+  }, []);
+
   return (
     <section id="faq" className="py-20 pb-48">
       <div className="container mx-auto px-4">

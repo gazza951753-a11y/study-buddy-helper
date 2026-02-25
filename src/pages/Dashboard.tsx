@@ -21,7 +21,7 @@ const Dashboard = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, is_admin")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
@@ -30,7 +30,9 @@ const Dashboard = () => {
         return;
       }
 
-      if (profile.role === "author") {
+      if (profile.is_admin) {
+        navigate("/admin", { replace: true });
+      } else if (profile.role === "author") {
         navigate("/author-dashboard", { replace: true });
       } else {
         navigate("/student-dashboard", { replace: true });

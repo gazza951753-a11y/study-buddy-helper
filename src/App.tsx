@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import AuthorDashboard from "./pages/AuthorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import OrderDetail from "./pages/OrderDetail";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,8 @@ const App = () => (
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           {/* Author cabinet */}
           <Route path="/author-dashboard" element={<AuthorDashboard />} />
+          {/* Admin panel */}
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* Order detail page with chat */}
           <Route path="/order/:id" element={<OrderDetail />} />
           {/* Legacy payment page */}

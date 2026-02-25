@@ -21,6 +21,7 @@ export type Database = {
           phone: string | null
           telegram_username: string | null
           role: "student" | "author"
+          is_admin: boolean
           bio: string | null
           specializations: string[] | null
           bonus_balance: number
@@ -36,6 +37,7 @@ export type Database = {
           phone?: string | null
           telegram_username?: string | null
           role?: "student" | "author"
+          is_admin?: boolean
           bio?: string | null
           specializations?: string[] | null
           bonus_balance?: number
@@ -51,12 +53,37 @@ export type Database = {
           phone?: string | null
           telegram_username?: string | null
           role?: "student" | "author"
+          is_admin?: boolean
           bio?: string | null
           specializations?: string[] | null
           bonus_balance?: number
           referral_code?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          id: string
+          key: string
+          label: string
+          value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          label: string
+          value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          label?: string
+          value?: Json
+          updated_at?: string | null
         }
         Relationships: []
       }
