@@ -18,7 +18,7 @@ import {
   X
 } from "lucide-react";
 import { toast } from "sonner";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { AuthChangeEvent, User as SupabaseUser } from "@supabase/supabase-js";
 
 interface Profile {
   id: string;
@@ -38,6 +38,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [authChecked, setAuthChecked] = useState(false);
   
   const [editData, setEditData] = useState({
     username: "",
@@ -46,48 +47,67 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
     const safetyTimer = window.setTimeout(() => {
+      if (!isMounted) return;
       setLoading(false);
-    }, 2500);
+      setAuthChecked(true);
+    }, 4000);
+
+    const handleSession = (sessionUser: SupabaseUser | null) => {
+      if (!isMounted) return;
+
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        setLoading(false);
+        setAuthChecked(true);
+          fetchProfile(sessionUser.id);
+        return;
+      }
+
+      setLoading(false);
+      setAuthChecked(true);
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          setLoading(false);
-          fetchProfile(session.user.id);
+      (event: AuthChangeEvent, session) => {
+        if (event === "SIGNED_OUT") {
+          handleSession(null);
           return;
         }
 
-        setLoading(false);
-        navigate("/auth");
+        if (session?.user) {
+          handleSession(session.user);
+        }
       }
     );
 
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        if (session?.user) {
-          setUser(session.user);
-          setLoading(false);
-          fetchProfile(session.user.id);
-          return;
-        }
-
-        setLoading(false);
-        navigate("/auth");
+        handleSession(session?.user ?? null);
       })
       .catch((error) => {
         console.error("Error getting session:", error);
+        if (!isMounted) return;
         setLoading(false);
-      });
+        setAuthChecked(true);
+        });
 
     return () => {
+      isMounted = false;
       window.clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !authChecked) return;
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [authChecked, loading, navigate, user]);
 
   const fetchProfile = async (userId: string) => {
     try {
