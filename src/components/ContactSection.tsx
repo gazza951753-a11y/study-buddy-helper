@@ -33,8 +33,8 @@ const MaxIcon = () => (
 const messengers = [
   { icon: TelegramIcon, label: "Telegram", href: "https://t.me/studyAssist_support", color: "hover:bg-[#229ED9]" },
   { icon: WhatsAppIcon, label: "WhatsApp", href: "https://wa.me/79539246817", color: "hover:bg-[#25D366]" },
-  { icon: VKIcon, label: "VK", href: "https://vk.com", color: "hover:bg-[#0077FF]" },
-  { icon: MaxIcon, label: "Макс", href: "https://max.ru", color: "hover:bg-[#8E44AD]" },
+  { icon: VKIcon, label: "VK", href: "https://vk.com/supp0rt_studyassist", color: "hover:bg-[#0077FF]" },
+  { icon: MaxIcon, label: "Макс", href: "https://max.ru/u/f9LHodD0cOJnmtYpL4gjVCqE1fwx2a9yZZn3aFM2BrTatvM4GtkWCWQyCwY", color: "hover:bg-[#8E44AD]" },
 ];
 
 const ContactSection = () => {

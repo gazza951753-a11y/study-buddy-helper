@@ -25,6 +25,10 @@ const HeroSection = () => {
     document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const scrollToContacts = () => {
+    document.getElementById("contacts")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section ref={containerRef} className="relative min-h-screen pt-36 pb-16 overflow-hidden bg-background">
       {/* Animated Background */}
@@ -142,14 +146,9 @@ const HeroSection = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="cta" size="xl" onClick={scrollToCalculator}>
-                  Оформить заказ
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" size="xl">
+                <Button variant="outline" size="xl" onClick={scrollToContacts}>
                   Задать вопрос
+                  <ArrowRight className="w-5 h-5" />
                 </Button>
               </motion.div>
             </motion.div>
