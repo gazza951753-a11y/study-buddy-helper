@@ -5,8 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Base path for GitHub Pages deployment at /study-buddy-helper/
-  base: mode === "production" ? "/study-buddy-helper/" : "/",
+  // Base path: "/" для Beget/studyassist.ru
+  base: "/",
   server: {
     host: "::",
     port: 8080,

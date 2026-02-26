@@ -1,0 +1,9 @@
+Options -MultiViews
+RewriteEngine On
+
+# Разрешаем прямой доступ к существующим файлам и папкам
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Все остальные запросы отправляем в index.html (SPA-роутинг)
+RewriteRule ^ /index.html [QSA,L]
