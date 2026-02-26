@@ -36,6 +36,8 @@ import {
   X,
   Check,
   Shield,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 
 type Profile = {
@@ -253,6 +255,22 @@ const AdminDashboard = () => {
     loadUsers();
   };
 
+  const handleToggleAdmin = async (profileId: string, isAdmin: boolean, username: string) => {
+    if (profileId === currentProfile?.id) {
+      toast.error("Нельзя изменить права администратора у самого себя");
+      return;
+    }
+    const action = isAdmin ? "снять права администратора у" : "назначить администратором";
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} пользователя «${username}»?`)) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_admin: !isAdmin })
+      .eq("id", profileId);
+    if (error) { toast.error("Ошибка: " + error.message); return; }
+    toast.success(isAdmin ? "Права администратора сняты" : `«${username}» теперь администратор`);
+    loadUsers();
+  };
+
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
     const { error } = await supabase
       .from("orders")
@@ -400,8 +418,8 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>
                               {user.is_admin ? (
-                                <Badge variant="secondary">
-                                  {user.role === "author" ? "Автор" : "Студент"}
+                                <Badge variant="default" className="bg-purple-600 hover:bg-purple-700">
+                                  Администратор
                                 </Badge>
                               ) : (
                                 <Select
@@ -425,16 +443,29 @@ const AdminDashboard = () => {
                               {new Date(user.created_at).toLocaleDateString("ru-RU")}
                             </TableCell>
                             <TableCell>
-                              {!user.is_admin && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDeleteUser(user.id, user.username)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {user.id !== currentProfile?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title={user.is_admin ? "Снять права администратора" : "Назначить администратором"}
+                                    className={user.is_admin ? "text-purple-600 hover:text-purple-700" : "text-muted-foreground hover:text-primary"}
+                                    onClick={() => handleToggleAdmin(user.id, user.is_admin, user.username)}
+                                  >
+                                    {user.is_admin ? <ShieldOff className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                                  </Button>
+                                )}
+                                {!user.is_admin && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => handleDeleteUser(user.id, user.username)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
