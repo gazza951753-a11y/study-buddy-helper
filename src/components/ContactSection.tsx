@@ -6,9 +6,9 @@ import { AnimatedSection } from "./AnimatedSection";
 
 const ContactSection = () => {
   const contactInfo = [
-    { icon: Mail, label: "Email", value: "help@studyassist.ru", href: "mailto:help@studyassist.ru" },
-    { icon: Phone, label: "Телефон", value: "+7 (800) 123-45-67", href: "tel:+78001234567" },
-    { icon: MessageCircle, label: "Telegram", value: "@studyHelplessBot", href: "https://t.me/studyHelplessBot" },
+    { icon: Mail, label: "Email", value: "support@studyassist.ru", href: "mailto:support@studyassist.ru" },
+    { icon: Phone, label: "Телефон", value: "+7 (953) 924-68-17", href: "tel:+79539246817" },
+    { icon: MessageCircle, label: "Telegram", value: "@supprot_studyAssist", href: "https://t.me/supprot_studyAssist" },
     { icon: MapPin, label: "Работаем", value: "Онлайн по всей России", href: null },
   ];
 

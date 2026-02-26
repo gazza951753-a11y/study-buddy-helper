@@ -26,7 +26,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section ref={containerRef} className="relative min-h-screen pt-24 pb-16 overflow-hidden bg-background">
+    <section ref={containerRef} className="relative min-h-screen pt-36 pb-16 overflow-hidden bg-background">
       {/* Animated Background */}
       <motion.div className="absolute inset-0 -z-10" style={{ y: backgroundY }}>
         <motion.div
