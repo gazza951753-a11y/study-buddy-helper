@@ -52,25 +52,18 @@ const reviews = [
   },
 ];
 
-/** Аватарка: фото если есть, иначе буква */
-const Avatar = ({
-  avatarFile,
-  initials,
-  size = "md",
-}: {
-  avatarFile: string;
-  initials: string;
-  size?: "md";
-}) => {
+/** Аватарка: реальное фото или буква-заглушка */
+const Avatar = ({ avatarFile, initials }: { avatarFile: string; initials: string }) => {
   const [failed, setFailed] = useState(false);
-  const cls = "w-12 h-12 rounded-full object-cover";
+  // import.meta.env.BASE_URL корректно работает и на '/' (Beget) и на '/study-buddy-helper/' (GitHub Pages)
+  const src = `${import.meta.env.BASE_URL}avatars/${avatarFile}`;
 
   if (!failed) {
     return (
       <img
-        src={`/avatars/${avatarFile}`}
+        src={src}
         alt={initials}
-        className={cls}
+        className="w-12 h-12 rounded-full object-cover"
         onError={() => setFailed(true)}
       />
     );
@@ -81,6 +74,46 @@ const Avatar = ({
     </div>
   );
 };
+
+/** Карточка одного отзыва */
+const ReviewCard = ({ review, index }: { review: typeof reviews[0]; index: number }) => (
+  <motion.div
+    key={review.name}
+    initial={{ opacity: 0, y: 50, rotateX: -10 }}
+    whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay: index * 0.12, duration: 0.6 }}
+    whileHover={{ y: -8, scale: 1.02 }}
+    className="bg-card rounded-2xl p-6 sm:p-7 border border-border shadow-lg flex flex-col"
+  >
+    <Quote className="w-9 h-9 text-primary/20 mb-4 shrink-0" />
+    <p className="text-foreground leading-relaxed mb-5 flex-1">"{review.text}"</p>
+
+    <div className="flex gap-1 mb-5">
+      {[...Array(review.rating)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 + i * 0.08 }}
+        >
+          <Star className="w-4 h-4 text-accent fill-accent" />
+        </motion.div>
+      ))}
+    </div>
+
+    <div className="flex items-center gap-3">
+      <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }}>
+        <Avatar avatarFile={review.avatarFile} initials={review.initials} />
+      </motion.div>
+      <div>
+        <div className="font-semibold text-foreground text-sm">{review.name}</div>
+        <div className="text-xs text-muted-foreground">{review.role}</div>
+      </div>
+      <div className="ml-auto text-xs text-muted-foreground">{review.date}</div>
+    </div>
+  </motion.div>
+);
 
 const ReviewsSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,29 +126,16 @@ const ReviewsSection = () => {
 
   const x = useTransform(scrollYProgress, [0, 1], [100, -100]);
 
-  const nextReview = () => {
-    setActiveIndex((prev) => (prev + 1) % reviews.length);
-  };
-
-  const prevReview = () => {
-    setActiveIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
-  };
+  const nextReview = () => setActiveIndex((prev) => (prev + 1) % reviews.length);
+  const prevReview = () => setActiveIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
 
   return (
     <section id="reviews" ref={containerRef} className="py-24 bg-secondary/30 relative overflow-hidden">
-      {/* Floating elements */}
-      <motion.div
-        className="absolute top-20 left-10 text-6xl opacity-10"
-        style={{ x }}
-      >
-        ⭐
-      </motion.div>
+      <motion.div className="absolute top-20 left-10 text-6xl opacity-10" style={{ x }}>⭐</motion.div>
       <motion.div
         className="absolute bottom-20 right-10 text-8xl opacity-10"
         style={{ x: useTransform(scrollYProgress, [0, 1], [-100, 100]) }}
-      >
-        ✨
-      </motion.div>
+      >✨</motion.div>
 
       <div className="container mx-auto px-4">
         <AnimatedSection className="text-center max-w-3xl mx-auto mb-16">
@@ -130,46 +150,20 @@ const ReviewsSection = () => {
           </p>
         </AnimatedSection>
 
-        {/* Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6 lg:gap-8">
-          {reviews.slice(0, 3).map((review, index) => (
-            <motion.div
-              key={review.name}
-              initial={{ opacity: 0, y: 50, rotateX: -10 }}
-              whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.15, duration: 0.6 }}
-              whileHover={{ y: -10, scale: 1.02 }}
-              className="bg-card rounded-2xl p-6 sm:p-8 border border-border shadow-lg"
-            >
-              <Quote className="w-10 h-10 text-primary/20 mb-4" />
-              <p className="text-foreground leading-relaxed mb-6">"{review.text}"</p>
-
-              <div className="flex gap-1 mb-6">
-                {[...Array(review.rating)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 + i * 0.1 }}
-                  >
-                    <Star className="w-5 h-5 text-accent fill-accent" />
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }}>
-                  <Avatar avatarFile={review.avatarFile} initials={review.initials} />
-                </motion.div>
-                <div>
-                  <div className="font-semibold text-foreground">{review.name}</div>
-                  <div className="text-sm text-muted-foreground">{review.role}</div>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mt-4">{review.date}</div>
-            </motion.div>
-          ))}
+        {/* Desktop: 3 в первом ряду + 2 по центру во втором */}
+        <div className="hidden md:block space-y-6">
+          {/* Первый ряд — 3 карточки */}
+          <div className="grid grid-cols-3 gap-6 lg:gap-7">
+            {reviews.slice(0, 3).map((review, index) => (
+              <ReviewCard key={review.name} review={review} index={index} />
+            ))}
+          </div>
+          {/* Второй ряд — 2 карточки по центру */}
+          <div className="grid grid-cols-2 gap-6 lg:gap-7 max-w-[66%] mx-auto">
+            {reviews.slice(3).map((review, index) => (
+              <ReviewCard key={review.name} review={review} index={index + 3} />
+            ))}
+          </div>
         </div>
 
         {/* Mobile Carousel */}
@@ -184,7 +178,7 @@ const ReviewsSection = () => {
             <Quote className="w-10 h-10 text-primary/20 mb-4" />
             <p className="text-foreground leading-relaxed mb-6">"{reviews[activeIndex].text}"</p>
 
-            <div className="flex gap-1 mb-6">
+            <div className="flex gap-1 mb-5">
               {[...Array(reviews[activeIndex].rating)].map((_, i) => (
                 <Star key={i} className="w-5 h-5 text-accent fill-accent" />
               ))}
@@ -202,7 +196,6 @@ const ReviewsSection = () => {
             </div>
           </motion.div>
 
-          {/* Navigation */}
           <div className="flex justify-center gap-4 mt-6">
             <Button variant="outline" size="icon" onClick={prevReview}>
               <ChevronLeft className="w-5 h-5" />
