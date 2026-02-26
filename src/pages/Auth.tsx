@@ -95,6 +95,8 @@ const Auth = () => {
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             toast.error("Неверный email или пароль");
+          } else if (error.message.includes("Email not confirmed")) {
+            toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
           } else {
             toast.error(error.message);
           }
