@@ -42,7 +42,7 @@ const Header = () => {
               <GraduationCap className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">
-              Edu<span className="text-primary">Help</span>
+              Study<span className="text-primary">Assist</span>
             </span>
           </a>
 
@@ -71,7 +71,7 @@ const Header = () => {
                 Войти
               </Button>
             )}
-            <Button variant="hero" size="sm">
+            <Button variant="cta" size="sm">
               Заказать работу
             </Button>
           </div>
@@ -110,7 +110,7 @@ const Header = () => {
                     Войти
                   </Button>
                 )}
-                <Button variant="hero" className="w-full">
+                <Button variant="cta" className="w-full">
                   Заказать работу
                 </Button>
               </div>

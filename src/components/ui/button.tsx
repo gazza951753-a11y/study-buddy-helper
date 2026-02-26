@@ -18,6 +18,7 @@ const buttonVariants = cva(
         hero: "bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02]",
         accent: "bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:-translate-y-1",
         glass: "bg-card/80 backdrop-blur-sm border border-border text-foreground hover:bg-card hover:shadow-md",
+        cta: "bg-rose-600 text-white shadow-lg hover:bg-rose-700 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02]",
       },
       size: {
         default: "h-11 px-6 py-2",

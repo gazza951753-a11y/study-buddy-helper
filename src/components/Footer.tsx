@@ -36,7 +36,7 @@ const Footer = () => {
                 <GraduationCap className="w-6 h-6 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-background">
-                Edu<span className="text-primary">Help</span>
+                Study<span className="text-primary">Assist</span>
               </span>
             </a>
             <p className="text-background/70 leading-relaxed mb-6">
@@ -128,7 +128,7 @@ const Footer = () => {
         <div className="pt-8 border-t border-background/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-background/50 text-sm text-center md:text-left">
-              © {currentYear} EduHelp. Все права защищены. 
+              © {currentYear} StudyAssist. Все права защищены.
               Оказываем консультационные услуги.
             </p>
             <div className="flex items-center gap-6">

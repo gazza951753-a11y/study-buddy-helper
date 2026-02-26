@@ -1,7 +1,58 @@
 import { Button } from "@/components/ui/button";
-import { Gift, Users, ArrowRight } from "lucide-react";
+import { Gift, Users, ArrowRight, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const STORAGE_KEY = "referral_promo_expiry";
+
+function getRandomDurationMs(): number {
+  const hours = 12 + Math.floor(Math.random() * 5); // 12–16
+  const minutes = Math.floor(Math.random() * 60);
+  return (hours * 60 + minutes) * 60 * 1000;
+}
+
+function getOrCreateExpiry(): number {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const expiry = parseInt(stored, 10);
+    if (expiry > Date.now()) return expiry;
+  }
+  const newExpiry = Date.now() + getRandomDurationMs();
+  localStorage.setItem(STORAGE_KEY, String(newExpiry));
+  return newExpiry;
+}
 
 const ReferralSection = () => {
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number }>({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  useEffect(() => {
+    let expiry = getOrCreateExpiry();
+
+    const tick = () => {
+      const remaining = expiry - Date.now();
+      if (remaining <= 0) {
+        // Reset to a new random interval
+        expiry = Date.now() + getRandomDurationMs();
+        localStorage.setItem(STORAGE_KEY, String(expiry));
+      }
+      const totalSec = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
+      setTimeLeft({
+        hours: Math.floor(totalSec / 3600),
+        minutes: Math.floor((totalSec % 3600) / 60),
+        seconds: totalSec % 60,
+      });
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
   return (
     <section className="py-20 bg-secondary/30">
       <div className="container mx-auto px-4">
@@ -19,27 +70,38 @@ const ReferralSection = () => {
                 <Gift className="w-4 h-4" />
                 Реферальная программа
               </div>
-              
+
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
                 Приводи друзей — получай скидки
               </h2>
-              
-              <p className="text-lg text-primary-foreground/80 mb-8">
-                Поделись своей реферальной ссылкой с друзьями. Они получат скидку 10% 
+
+              <p className="text-lg text-primary-foreground/80 mb-4">
+                Поделись своей реферальной ссылкой с друзьями. Они получат скидку 10%
                 на первый заказ, а ты — бонусы на следующие работы!
               </p>
 
+              {/* Countdown */}
+              <div className="inline-flex items-center gap-2 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl text-primary-foreground mb-8 border border-white/20">
+                <Clock className="w-4 h-4 shrink-0 text-rose-300" />
+                <span className="text-sm font-medium">
+                  До конца акции:&nbsp;
+                  <span className="font-bold tabular-nums">
+                    {pad(timeLeft.hours)}ч {pad(timeLeft.minutes)}мин {pad(timeLeft.seconds)}с
+                  </span>
+                </span>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  variant="glass" 
-                  size="lg" 
+                <Button
+                  variant="glass"
+                  size="lg"
                   className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                 >
                   Получить ссылку
                   <ArrowRight className="w-5 h-5" />
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="lg"
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                 >

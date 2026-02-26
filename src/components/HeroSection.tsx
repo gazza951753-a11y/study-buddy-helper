@@ -142,7 +142,7 @@ const HeroSection = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="xl" onClick={scrollToCalculator}>
+                <Button variant="cta" size="xl" onClick={scrollToCalculator}>
                   Оформить заказ
                   <ArrowRight className="w-5 h-5" />
                 </Button>

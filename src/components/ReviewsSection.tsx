@@ -7,7 +7,8 @@ import { AnimatedSection } from "./AnimatedSection";
 const reviews = [
   {
     name: "Анна М.",
-    avatar: "А",
+    avatarFile: "anna.png",
+    initials: "А",
     role: "Студентка, Экономика",
     rating: 5,
     text: "Заказывала курсовую по микроэкономике. Сделали за неделю, преподаватель даже похвалил за качество анализа. Очень довольна!",
@@ -15,7 +16,8 @@ const reviews = [
   },
   {
     name: "Дмитрий К.",
-    avatar: "Д",
+    avatarFile: "dmitriy.png",
+    initials: "Д",
     role: "Студент, Юриспруденция",
     rating: 5,
     text: "Срочно нужен был диплом, оставалось 2 недели до защиты. Ребята справились, защитился на отлично. Рекомендую!",
@@ -23,7 +25,8 @@ const reviews = [
   },
   {
     name: "Елена С.",
-    avatar: "Е",
+    avatarFile: "elena.png",
+    initials: "Е",
     role: "Магистрант, Психология",
     rating: 5,
     text: "Уже третий раз обращаюсь за помощью. Всегда качественно, в срок, учитывают все пожелания. Спасибо за накопительную скидку!",
@@ -31,7 +34,8 @@ const reviews = [
   },
   {
     name: "Михаил П.",
-    avatar: "М",
+    avatarFile: "mikhail.png",
+    initials: "М",
     role: "Студент, IT",
     rating: 5,
     text: "Заказывал курсовую по программированию. Код чистый, документация отличная. Преподаватель был в восторге!",
@@ -39,7 +43,8 @@ const reviews = [
   },
   {
     name: "Ольга В.",
-    avatar: "О",
+    avatarFile: "olga.png",
+    initials: "О",
     role: "Студентка, Медицина",
     rating: 5,
     text: "Сложная тема по анатомии — справились на ура. Очень благодарна за терпение и профессионализм!",
@@ -47,10 +52,40 @@ const reviews = [
   },
 ];
 
+/** Аватарка: фото если есть, иначе буква */
+const Avatar = ({
+  avatarFile,
+  initials,
+  size = "md",
+}: {
+  avatarFile: string;
+  initials: string;
+  size?: "md";
+}) => {
+  const [failed, setFailed] = useState(false);
+  const cls = "w-12 h-12 rounded-full object-cover";
+
+  if (!failed) {
+    return (
+      <img
+        src={`/avatars/${avatarFile}`}
+        alt={initials}
+        className={cls}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <div className="w-12 h-12 rounded-full gradient-hero flex items-center justify-center text-primary-foreground font-bold text-lg">
+      {initials}
+    </div>
+  );
+};
+
 const ReviewsSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"],
@@ -109,7 +144,7 @@ const ReviewsSection = () => {
             >
               <Quote className="w-10 h-10 text-primary/20 mb-4" />
               <p className="text-foreground leading-relaxed mb-6">"{review.text}"</p>
-              
+
               <div className="flex gap-1 mb-6">
                 {[...Array(review.rating)].map((_, i) => (
                   <motion.div
@@ -124,12 +159,8 @@ const ReviewsSection = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <motion.div
-                  className="w-12 h-12 rounded-full gradient-hero flex items-center justify-center text-primary-foreground font-bold text-lg"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {review.avatar}
+                <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }}>
+                  <Avatar avatarFile={review.avatarFile} initials={review.initials} />
                 </motion.div>
                 <div>
                   <div className="font-semibold text-foreground">{review.name}</div>
@@ -152,7 +183,7 @@ const ReviewsSection = () => {
           >
             <Quote className="w-10 h-10 text-primary/20 mb-4" />
             <p className="text-foreground leading-relaxed mb-6">"{reviews[activeIndex].text}"</p>
-            
+
             <div className="flex gap-1 mb-6">
               {[...Array(reviews[activeIndex].rating)].map((_, i) => (
                 <Star key={i} className="w-5 h-5 text-accent fill-accent" />
@@ -160,9 +191,10 @@ const ReviewsSection = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full gradient-hero flex items-center justify-center text-primary-foreground font-bold text-lg">
-                {reviews[activeIndex].avatar}
-              </div>
+              <Avatar
+                avatarFile={reviews[activeIndex].avatarFile}
+                initials={reviews[activeIndex].initials}
+              />
               <div>
                 <div className="font-semibold text-foreground">{reviews[activeIndex].name}</div>
                 <div className="text-sm text-muted-foreground">{reviews[activeIndex].role}</div>

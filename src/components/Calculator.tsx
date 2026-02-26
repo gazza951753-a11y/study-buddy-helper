@@ -144,9 +144,9 @@ const Calculator = () => {
       </div>
 
       {/* CTA Button */}
-      <Button 
-        variant="hero" 
-        size="lg" 
+      <Button
+        variant="cta"
+        size="lg"
         className="w-full mt-6"
         onClick={() => {
           const params = new URLSearchParams();
