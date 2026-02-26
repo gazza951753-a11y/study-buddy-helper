@@ -82,13 +82,46 @@ const Payment = () => {
     setIsProcessing(true);
 
     try {
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // Try to get current user profile to create order in DB
+      const { data: { session } } = await supabase.auth.getSession();
+      let dbOrderId: string | null = null;
+
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        if (profile) {
+          const { data: newOrder } = await supabase
+            .from("orders")
+            .insert({
+              student_id: profile.id,
+              work_type: workType,
+              subject: subject,
+              deadline_days: Number(deadline),
+              title: description || null,
+              price,
+              status: "pending_payment",
+            })
+            .select("id")
+            .single();
+          if (newOrder) dbOrderId = newOrder.id;
+        }
+      }
+
+      const orderId = dbOrderId || `order_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const workLabel = workTypes.find(w => w.value === workType)?.label || workType;
       const subjectLabel = subjects.find(s => s.value === subject)?.label || subject;
-      
-      const paymentDescription = description 
+
+      const paymentDescription = description
         ? `${workLabel} - ${subjectLabel}: ${description}`.substring(0, 128)
         : `${workLabel} - ${subjectLabel}`.substring(0, 128);
+
+      const returnUrl = dbOrderId
+        ? `${window.location.origin}/student-dashboard?payment=success&order=${dbOrderId}`
+        : `${window.location.origin}/payment?status=success`;
 
       const { data, error } = await supabase.functions.invoke('yookassa-payment', {
         body: {
@@ -96,7 +129,7 @@ const Payment = () => {
           description: paymentDescription,
           orderId: orderId,
           customerEmail: email,
-          returnUrl: `${window.location.origin}/payment?status=success`
+          returnUrl,
         }
       });
 

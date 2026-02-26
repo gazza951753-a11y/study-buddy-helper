@@ -25,7 +25,6 @@ interface YooKassaNotification {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -37,10 +36,9 @@ const handler = async (req: Request): Promise<Response> => {
       type: notification.type,
       event: notification.event,
       paymentId: notification.object?.id,
-      status: notification.object?.status
+      status: notification.object?.status,
     });
 
-    // Validate notification structure
     if (!notification.object || !notification.object.id) {
       console.error('Invalid notification structure');
       return new Response(
@@ -52,30 +50,80 @@ const handler = async (req: Request): Promise<Response> => {
     const payment = notification.object;
     const orderId = payment.metadata?.order_id;
 
-    // Log payment status change
-    console.log(`Payment ${payment.id} status: ${payment.status}, order: ${orderId}`);
+    // Init Supabase with service role to bypass RLS
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    // Handle different payment statuses
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Missing Supabase configuration');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey);
+
     switch (payment.status) {
-      case 'succeeded':
+      case 'succeeded': {
         console.log(`Payment ${payment.id} succeeded for order ${orderId}`);
-        // Here you can update order status in database
-        // For example: await updateOrderStatus(orderId, 'paid');
-        break;
 
-      case 'canceled':
+        if (orderId) {
+          // Update order status to 'paid' and save payment_id
+          const { error } = await supabase
+            .from('orders')
+            .update({
+              status: 'paid',
+              payment_id: payment.id,
+              payment_status: 'succeeded',
+            })
+            .eq('id', orderId);
+
+          if (error) {
+            console.error('Failed to update order status:', error);
+          } else {
+            console.log(`Order ${orderId} marked as paid`);
+
+            // Fetch order to notify student
+            const { data: order } = await supabase
+              .from('orders')
+              .select('student_id, work_type, price')
+              .eq('id', orderId)
+              .single();
+
+            if (order) {
+              await supabase.from('notifications').insert({
+                user_id: order.student_id,
+                title: 'Оплата получена',
+                body: `Ваш заказ оплачен на сумму ${Number(payment.amount.value).toLocaleString('ru-RU')} ₽. Исполнитель будет назначен в ближайшее время.`,
+                link: `/order/${orderId}`,
+              });
+            }
+          }
+        }
+        break;
+      }
+
+      case 'canceled': {
         console.log(`Payment ${payment.id} was canceled for order ${orderId}`);
-        break;
 
-      case 'waiting_for_capture':
-        console.log(`Payment ${payment.id} waiting for capture`);
+        if (orderId) {
+          await supabase
+            .from('orders')
+            .update({
+              status: 'cancelled',
+              payment_id: payment.id,
+              payment_status: 'canceled',
+            })
+            .eq('id', orderId);
+        }
         break;
+      }
 
       default:
         console.log(`Payment ${payment.id} has status: ${payment.status}`);
     }
 
-    // Always return 200 to acknowledge receipt
     return new Response(
       JSON.stringify({ received: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -83,7 +131,6 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error) {
     console.error('Error processing webhook:', error);
-    // Still return 200 to prevent retries for malformed requests
     return new Response(
       JSON.stringify({ error: 'Processing error' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

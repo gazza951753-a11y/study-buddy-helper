@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
@@ -16,34 +14,269 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
-          created_at: string
-          email: string
           id: string
+          user_id: string
+          username: string
+          email: string
           phone: string | null
           telegram_username: string | null
+          role: "student" | "author"
+          is_admin: boolean
+          bio: string | null
+          specializations: string[] | null
+          bonus_balance: number
+          referral_code: string | null
+          created_at: string
           updated_at: string
-          user_id: string
-          username: string
         }
         Insert: {
-          created_at?: string
-          email: string
           id?: string
-          phone?: string | null
-          telegram_username?: string | null
-          updated_at?: string
           user_id: string
           username: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
+          email: string
           phone?: string | null
           telegram_username?: string | null
+          role?: "student" | "author"
+          is_admin?: boolean
+          bio?: string | null
+          specializations?: string[] | null
+          bonus_balance?: number
+          referral_code?: string | null
+          created_at?: string
           updated_at?: string
+        }
+        Update: {
+          id?: string
           user_id?: string
           username?: string
+          email?: string
+          phone?: string | null
+          telegram_username?: string | null
+          role?: "student" | "author"
+          is_admin?: boolean
+          bio?: string | null
+          specializations?: string[] | null
+          bonus_balance?: number
+          referral_code?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          id: string
+          key: string
+          label: string
+          value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          label: string
+          value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          label?: string
+          value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          id: string
+          student_id: string
+          author_id: string | null
+          work_type: string
+          subject: string
+          deadline_days: number
+          title: string | null
+          description: string | null
+          price: number
+          payment_id: string | null
+          payment_status: string | null
+          status:
+            | "pending_payment"
+            | "paid"
+            | "in_progress"
+            | "review"
+            | "revision"
+            | "completed"
+            | "cancelled"
+            | "disputed"
+          deadline_date: string | null
+          accepted_at: string | null
+          submitted_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+          student_rating: number | null
+          student_review: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          author_id?: string | null
+          work_type: string
+          subject: string
+          deadline_days: number
+          title?: string | null
+          description?: string | null
+          price: number
+          payment_id?: string | null
+          payment_status?: string | null
+          status?: "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          deadline_date?: string | null
+          accepted_at?: string | null
+          submitted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+          student_rating?: number | null
+          student_review?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          author_id?: string | null
+          work_type?: string
+          subject?: string
+          deadline_days?: number
+          title?: string | null
+          description?: string | null
+          price?: number
+          payment_id?: string | null
+          payment_status?: string | null
+          status?: "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          deadline_date?: string | null
+          accepted_at?: string | null
+          submitted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+          student_rating?: number | null
+          student_review?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_author_id_fkey"
+            columns: ["author_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      order_messages: {
+        Row: {
+          id: string
+          order_id: string
+          sender_id: string
+          message: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          sender_id: string
+          message: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          sender_id?: string
+          message?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      order_files: {
+        Row: {
+          id: string
+          order_id: string
+          uploader_id: string
+          file_name: string
+          file_url: string
+          file_size: number | null
+          file_type: "requirement" | "result"
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          uploader_id: string
+          file_name: string
+          file_url: string
+          file_size?: number | null
+          file_type: "requirement" | "result"
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          uploader_id?: string
+          file_name?: string
+          file_url?: string
+          file_size?: number | null
+          file_type?: "requirement" | "result"
+          created_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          is_read: boolean
+          link: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          body: string
+          is_read?: boolean
+          link?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          body?: string
+          is_read?: boolean
+          link?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -52,7 +285,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_author_stats: {
+        Args: { p_author_id: string }
+        Returns: {
+          total_orders: number
+          completed_orders: number
+          total_earned: number
+          avg_rating: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -64,7 +305,6 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
