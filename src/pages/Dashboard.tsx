@@ -4,21 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  GraduationCap, 
-  User, 
-  Settings, 
-  Package, 
-  Bell, 
-  Gift, 
-  Link2, 
+import {
+  GraduationCap,
+  User,
+  Settings,
+  Package,
+  Bell,
+  Gift,
+  Link2,
   LogOut,
   Edit2,
   Save,
   X
 } from "lucide-react";
 import { toast } from "sonner";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { AuthChangeEvent, User as SupabaseUser } from "@supabase/supabase-js";
 
 interface Profile {
   id: string;
@@ -38,59 +38,137 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [editData, setEditData] = useState({
     username: "",
     phone: "",
     telegram_username: "",
   });
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (!session?.user) {
-          navigate("/auth");
-        }
-      }
-    );
+  const getFallbackUsername = (sessionUser: SupabaseUser) => {
+    const metadataUsername = sessionUser.user_metadata?.username;
+    if (typeof metadataUsername === "string" && metadataUsername.trim()) {
+      return metadataUsername.trim();
+    }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
-      } else {
-        navigate("/auth");
-      }
+    const emailPrefix = sessionUser.email?.split("@")[0];
+    if (emailPrefix && emailPrefix.trim()) {
+      return emailPrefix.trim();
+    }
+
+    return "Пользователь";
+  };
+
+  const createProfile = async (sessionUser: SupabaseUser) => {
+    const payload = {
+      user_id: sessionUser.id,
+      email: sessionUser.email ?? "",
+      username: getFallbackUsername(sessionUser),
+      phone: typeof sessionUser.user_metadata?.phone === "string" ? sessionUser.user_metadata.phone : null,
+      telegram_username: typeof sessionUser.user_metadata?.telegram_username === "string" ? sessionUser.user_metadata.telegram_username : null,
+    };
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    setProfile(data);
+    setEditData({
+      username: data.username,
+      phone: data.phone || "",
+      telegram_username: data.telegram_username || "",
     });
+  };
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (sessionUser: SupabaseUser) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", sessionUser.id)
         .maybeSingle();
 
       if (error) throw error;
-      
-      if (data) {
-        setProfile(data);
-        setEditData({
-          username: data.username,
-          phone: data.phone || "",
-          telegram_username: data.telegram_username || "",
-        });
+
+      if (!data) {
+        await createProfile(sessionUser);
+        return;
       }
+
+      setProfile(data);
+      setEditData({
+        username: data.username,
+        phone: data.phone || "",
+        telegram_username: data.telegram_username || "",
+      });
     } catch (error) {
       console.error("Error fetching profile:", error);
+      toast.error("Не удалось загрузить профиль");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleSession = (sessionUser: SupabaseUser | null) => {
+      if (!isMounted) return;
+
+      setUser(sessionUser);
+      setAuthChecked(true);
+
+      if (!sessionUser) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(false);
+      fetchProfile(sessionUser);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session) => {
+        if (event === "SIGNED_OUT") {
+          handleSession(null);
+          return;
+        }
+
+        if (session?.user) {
+          handleSession(session.user);
+        }
+      }
+    );
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        handleSession(session?.user ?? null);
+      })
+      .catch((error) => {
+        console.error("Error getting session:", error);
+        if (!isMounted) return;
+        setLoading(false);
+        setAuthChecked(true);
+      });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (loading || !authChecked) return;
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [authChecked, loading, navigate, user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -157,10 +235,10 @@ const Dashboard = () => {
                 Edu<span className="text-primary">Help</span>
               </span>
             </a>
-            
+
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground hidden md:block">
-                {profile?.email}
+                {profile?.email || user?.email}
               </span>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
@@ -225,8 +303,8 @@ const Dashboard = () => {
                         <User className="w-10 h-10 text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-semibold">{profile?.username}</h2>
-                        <p className="text-muted-foreground">{profile?.email}</p>
+                        <h2 className="text-xl font-semibold">{profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Пользователь"}</h2>
+                        <p className="text-muted-foreground">{profile?.email || user?.email}</p>
                       </div>
                     </div>
 
@@ -239,13 +317,13 @@ const Dashboard = () => {
                             onChange={(e) => setEditData({ ...editData, username: e.target.value })}
                           />
                         ) : (
-                          <p className="mt-1 text-foreground">{profile?.username}</p>
+                          <p className="mt-1 text-foreground">{profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "-"}</p>
                         )}
                       </div>
 
                       <div>
                         <Label>Email</Label>
-                        <p className="mt-1 text-foreground">{profile?.email}</p>
+                        <p className="mt-1 text-foreground">{profile?.email || user?.email}</p>
                       </div>
 
                       <div>
@@ -324,7 +402,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="text-muted-foreground">
-                    Бонусы начисляются за каждый оплаченный заказ и могут быть использованы 
+                    Бонусы начисляются за каждый оплаченный заказ и могут быть использованы
                     для оплаты до 30% стоимости следующих заказов.
                   </p>
                 </div>
@@ -368,8 +446,9 @@ const Dashboard = () => {
                         Для смены пароля мы отправим вам ссылку на email
                       </p>
                       <Button variant="outline" onClick={async () => {
-                        if (profile?.email) {
-                          await supabase.auth.resetPasswordForEmail(profile.email, {
+                        const targetEmail = profile?.email || user?.email;
+                        if (targetEmail) {
+                          await supabase.auth.resetPasswordForEmail(targetEmail, {
                             redirectTo: `${window.location.origin}/auth`,
                           });
                           toast.success("Ссылка для сброса пароля отправлена на email");
