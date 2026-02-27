@@ -11,6 +11,7 @@ import AuthorDashboard from "./pages/AuthorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import OrderDetail from "./pages/OrderDetail";
 import Payment from "./pages/Payment";
+import EmailConfirmed from "./pages/EmailConfirmed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,8 @@ const App = () => (
           <Route path="/order/:id" element={<OrderDetail />} />
           {/* Legacy payment page */}
           <Route path="/payment" element={<Payment />} />
+          {/* Email confirmation landing */}
+          <Route path="/email-confirmed" element={<EmailConfirmed />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -128,7 +128,7 @@ const Auth = () => {
           email: formData.email,
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/email-confirmed`,
             data: {
               username: formData.username,
               phone: formData.phone || null,
