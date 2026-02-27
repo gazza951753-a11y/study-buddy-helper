@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, Eye, EyeOff, ArrowLeft, BookOpen, PenLine } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, ArrowLeft, BookOpen, PenLine, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import UserAgreementDialog from "@/components/UserAgreementDialog";
@@ -25,12 +25,16 @@ const loginSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"student" | "author">("student");
+  // "check your email" screen state
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -41,6 +45,16 @@ const Auth = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Handle redirect from Dashboard when email is not confirmed
+    const state = location.state as { emailNotConfirmed?: boolean; email?: string } | null;
+    if (state?.emailNotConfirmed && state?.email) {
+      setPendingEmail(state.email);
+      toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     // Redirect already-authenticated users away from the auth page
@@ -87,7 +101,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: loginData, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
@@ -97,9 +111,19 @@ const Auth = () => {
             toast.error("Неверный email или пароль");
           } else if (error.message.includes("Email not confirmed")) {
             toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
+            setPendingEmail(formData.email);
           } else {
             toast.error(error.message);
           }
+          setLoading(false);
+          return;
+        }
+
+        // Extra safety: block entry if email is not confirmed
+        if (!loginData.user?.email_confirmed_at) {
+          await supabase.auth.signOut();
+          toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
+          setPendingEmail(formData.email);
           setLoading(false);
           return;
         }
@@ -153,13 +177,8 @@ const Auth = () => {
           toast.success("Регистрация успешна!");
           navigate("/dashboard");
         } else {
-          // Подтверждение email включено — просим проверить почту
-          toast.success(
-            `Письмо с подтверждением отправлено на ${formData.email}. Перейдите по ссылке для активации аккаунта.`,
-            { duration: 8000 }
-          );
-          setIsLogin(true);
-          setFormData(prev => ({ ...prev, username: "", phone: "", telegram_username: "" }));
+          // Подтверждение email включено — показываем экран "проверьте почту"
+          setPendingEmail(formData.email);
         }
       }
     } catch {
@@ -168,6 +187,76 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    if (!pendingEmail) return;
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: `${window.location.origin}/email-confirmed` },
+    });
+    setResendLoading(false);
+    if (error) {
+      toast.error("Не удалось отправить письмо: " + error.message);
+    } else {
+      toast.success("Письмо отправлено повторно. Проверьте почту.");
+    }
+  };
+
+  // "Check your email" screen
+  if (pendingEmail) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-card rounded-2xl shadow-lg border border-border p-8 flex flex-col items-center text-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                <GraduationCap className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <span className="text-2xl font-bold text-foreground">
+                Study<span className="text-primary">Assist</span>
+              </span>
+            </div>
+
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+              <Mail className="w-10 h-10 text-primary" />
+            </div>
+
+            <div>
+              <h1 className="text-xl font-bold text-foreground mb-2">
+                Подтвердите email
+              </h1>
+              <p className="text-muted-foreground leading-relaxed text-sm">
+                Письмо с ссылкой для активации отправлено на{" "}
+                <span className="font-semibold text-foreground">{pendingEmail}</span>.
+                Перейдите по ссылке в письме, чтобы войти в кабинет.
+              </p>
+            </div>
+
+            <div className="w-full space-y-3">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${resendLoading ? "animate-spin" : ""}`} />
+                {resendLoading ? "Отправляем..." : "Отправить письмо повторно"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingEmail(null)}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Вернуться к входу
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

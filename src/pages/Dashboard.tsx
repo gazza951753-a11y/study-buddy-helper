@@ -21,6 +21,13 @@ const Dashboard = () => {
         return;
       }
 
+      // Block access if email is not confirmed
+      if (!session.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        navigate("/auth", { state: { emailNotConfirmed: true, email: session.user.email } });
+        return;
+      }
+
       // Retry up to 5 times with 800ms delay — profile may not be created yet
       // immediately after signup (Supabase trigger runs asynchronously)
       let profile = null;
