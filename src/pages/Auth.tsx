@@ -124,7 +124,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -148,8 +148,19 @@ const Auth = () => {
           return;
         }
 
-        toast.success("Регистрация успешна!");
-        navigate("/dashboard");
+        if (signUpData.session) {
+          // Подтверждение email отключено — пользователь сразу авторизован
+          toast.success("Регистрация успешна!");
+          navigate("/dashboard");
+        } else {
+          // Подтверждение email включено — просим проверить почту
+          toast.success(
+            `Письмо с подтверждением отправлено на ${formData.email}. Перейдите по ссылке для активации аккаунта.`,
+            { duration: 8000 }
+          );
+          setIsLogin(true);
+          setFormData(prev => ({ ...prev, username: "", phone: "", telegram_username: "" }));
+        }
       }
     } catch {
       toast.error("Произошла ошибка");
