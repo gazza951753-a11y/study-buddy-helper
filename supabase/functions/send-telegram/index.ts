@@ -16,6 +16,67 @@ interface TelegramRequest {
   price?: string;
 }
 
+async function sendEmailViaResend(data: TelegramRequest): Promise<void> {
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL");
+
+  if (!RESEND_API_KEY || !ADMIN_EMAIL) {
+    console.warn("Resend not configured, skipping email notification");
+    return;
+  }
+
+  const rows = [
+    ["Имя", data.name],
+    ["Контакт", data.contact],
+    data.workType ? ["Тип работы", data.workType] : null,
+    data.subject ? ["Тема", data.subject] : null,
+    data.deadline ? ["Срок", data.deadline] : null,
+    data.price ? ["Расчётная цена", data.price] : null,
+    data.message ? ["Сообщение", data.message] : null,
+  ]
+    .filter(Boolean)
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:8px 12px;font-weight:600;color:#555;white-space:nowrap">${label}:</td>` +
+        `<td style="padding:8px 12px;color:#222">${value}</td></tr>`
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+      <h2 style="background:#6366f1;color:#fff;margin:0;padding:20px 24px;border-radius:8px 8px 0 0">
+        📚 Новая заявка с сайта
+      </h2>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+        ${rows}
+      </table>
+      <p style="color:#888;font-size:12px;margin-top:16px;text-align:center">
+        Studyassist.ru — автоматическое уведомление
+      </p>
+    </div>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: "Studyassist <no-reply@studyassist.ru>",
+      to: [ADMIN_EMAIL],
+      subject: `Новая заявка: ${data.name}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Resend error:", err);
+  } else {
+    console.log("Email sent via Resend");
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Received request to send-telegram function");
   
@@ -86,6 +147,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Message sent successfully");
+
+    // Send email notification via Resend (non-blocking)
+    await sendEmailViaResend(data).catch((e) =>
+      console.error("Email send error:", e)
+    );
 
     return new Response(
       JSON.stringify({ success: true, message: "Заявка отправлена!" }),
