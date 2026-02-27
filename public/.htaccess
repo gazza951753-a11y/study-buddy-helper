@@ -1,9 +1,10 @@
 Options -MultiViews
 RewriteEngine On
+RewriteBase /
 
-# Разрешаем прямой доступ к существующим файлам и папкам
+# Разрешаем прямой доступ к существующим файлам и папкам (js, css, img и т.д.)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Все остальные запросы отправляем в index.html (SPA-роутинг)
-RewriteRule ^ /index.html [QSA,L]
+# Все остальные запросы → index.html (React Router)
+RewriteRule . index.html [QSA,L]
