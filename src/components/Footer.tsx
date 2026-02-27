@@ -155,9 +155,9 @@ const Footer = () => {
               Оказываем консультационные услуги.
             </p>
             <div className="flex items-center gap-6">
-              <img 
-                src="https://yookassa.ru/themes/flavor/front/img/yookassa-footer-logo.svg" 
-                alt="ЮKassa" 
+              <img
+                src="/yookassa-logo.svg"
+                alt="ЮKassa"
                 className="h-6 opacity-50"
               />
             </div>
