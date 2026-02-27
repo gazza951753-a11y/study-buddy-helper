@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rounded square background with gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Graduation cap (mortarboard) -->
+  <!-- Board top (diamond/flat) -->
+  <polygon points="32,14 54,24 32,34 10,24" fill="white"/>
+  <!-- Cap base (trapezoid sides) -->
+  <path d="M20,27 L20,40 Q32,46 44,40 L44,27 L32,33 Z" fill="white" opacity="0.9"/>
+  <!-- Tassel string -->
+  <line x1="54" y1="24" x2="54" y2="36" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Tassel end -->
+  <circle cx="54" cy="38" r="3" fill="white"/>
+</svg>
