@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,8 +120,8 @@ interface Order {
 // ─── component ────────────────────────────────────────────────────────────────
 
 const StudentDashboard = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -153,7 +153,7 @@ const StudentDashboard = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { navigate("/auth"); return; }
+      if (!session?.user) { router.push("/auth"); return; }
 
       const { data: p } = await supabase
         .from("profiles")
@@ -161,8 +161,8 @@ const StudentDashboard = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (!p) { navigate("/auth"); return; }
-      if (p.role === "author") { navigate("/author-dashboard"); return; }
+      if (!p) { router.push("/auth"); return; }
+      if (p.role === "author") { router.push("/author-dashboard"); return; }
 
       setProfile(p as Profile);
       setEditData({ username: p.username, phone: p.phone || "", telegram_username: p.telegram_username || "" });
@@ -180,12 +180,12 @@ const StudentDashboard = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session?.user) navigate("/auth");
+      if (!session?.user) router.push("/auth");
     });
 
     init();
     return () => subscription.unsubscribe();
-  }, [navigate, searchParams]);
+  }, [router, searchParams]);
 
   const fetchOrders = async (profileId: string) => {
     const { data } = await supabase
@@ -199,7 +199,7 @@ const StudentDashboard = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Вы вышли из системы");
-    navigate("/");
+    router.push("/");
   };
 
   const handleSaveProfile = async () => {
@@ -385,7 +385,7 @@ const StudentDashboard = () => {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="border border-border rounded-xl p-4 hover:border-primary/40 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/order/${order.id}`)}
+                          onClick={() => router.push(`/order?id=${order.id}`)}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -10,21 +10,21 @@ import { Button } from "@/components/ui/button";
  *   author  → /author-dashboard
  */
 const Dashboard = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const redirect = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate("/auth");
+        router.push("/auth");
         return;
       }
 
       // Block access if email is not confirmed
       if (!session.user.email_confirmed_at) {
         await supabase.auth.signOut();
-        navigate("/auth", { state: { emailNotConfirmed: true, email: session.user.email } });
+        router.push("/auth?emailNotConfirmed=1&email=" + encodeURIComponent(session.user.email || ""));
         return;
       }
 
@@ -56,16 +56,16 @@ const Dashboard = () => {
       }
 
       if (profile.is_admin) {
-        navigate("/admin", { replace: true });
+        router.replace("/admin");
       } else if (profile.role === "author") {
-        navigate("/author-dashboard", { replace: true });
+        router.replace("/author-dashboard");
       } else {
-        navigate("/student-dashboard", { replace: true });
+        router.replace("/student-dashboard");
       }
     };
 
     redirect();
-  }, [navigate]);
+  }, [router]);
 
   if (error) {
     return (
@@ -79,7 +79,7 @@ const Dashboard = () => {
             variant="outline"
             onClick={async () => {
               await supabase.auth.signOut();
-              navigate("/auth");
+              router.push("/auth");
             }}
           >
             Выйти и войти снова

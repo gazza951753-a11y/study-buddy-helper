@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { GraduationCap, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EmailConfirmed = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [countdown, setCountdown] = useState(5);
 
@@ -36,12 +36,12 @@ const EmailConfirmed = () => {
   useEffect(() => {
     if (status !== "success") return;
     if (countdown === 0) {
-      navigate("/auth", { replace: true });
+      router.replace("/auth");
       return;
     }
     const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
-  }, [status, countdown, navigate]);
+  }, [status, countdown, router]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -88,7 +88,7 @@ const EmailConfirmed = () => {
                 <Button
                   variant="hero"
                   className="w-full"
-                  onClick={() => navigate("/auth", { replace: true })}
+                  onClick={() => router.replace("/auth")}
                 >
                   Войти в аккаунт
                 </Button>
@@ -116,7 +116,7 @@ const EmailConfirmed = () => {
               <Button
                 variant="hero"
                 className="w-full"
-                onClick={() => navigate("/auth", { replace: true })}
+                onClick={() => router.replace("/auth")}
               >
                 На страницу входа
               </Button>

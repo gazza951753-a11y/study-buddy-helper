@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,7 +92,7 @@ const WORK_TYPE_LABELS: Record<string, string> = {
 const ACTIVE_STATUSES = ["paid", "in_progress", "review", "revision"];
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
 
@@ -129,7 +129,7 @@ const AdminDashboard = () => {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate("/auth");
+        router.push("/auth");
         return;
       }
 
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
         .maybeSingle();
 
       if (!profile || !profile.is_admin) {
-        navigate("/dashboard");
+        router.push("/dashboard");
         return;
       }
 
@@ -148,7 +148,7 @@ const AdminDashboard = () => {
       setLoading(false);
     };
     check();
-  }, [navigate]);
+  }, [router]);
 
   // Load all data once auth is confirmed
   useEffect(() => {
@@ -274,7 +274,7 @@ const AdminDashboard = () => {
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
     const { error } = await supabase
       .from("orders")
-      .update({ status: newStatus })
+      .update({ status: newStatus as "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed" })
       .eq("id", orderId);
     if (error) { toast.error("Ошибка при смене статуса"); return; }
     toast.success("Статус обновлён");
@@ -323,7 +323,7 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/");
+    router.push("/");
   };
 
   if (loading) {

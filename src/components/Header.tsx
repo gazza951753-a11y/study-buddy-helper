@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Menu, X, GraduationCap, User, Clock, Gift } from "lucide-react";
@@ -21,7 +23,7 @@ function getOrCreateExpiry(): number {
 }
 
 const Header = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
@@ -122,12 +124,12 @@ const Header = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
+              <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
                 <User className="w-4 h-4 mr-2" />
                 Кабинет
               </Button>
             ) : (
-              <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/auth")}>
                 Войти
               </Button>
             )}
@@ -161,12 +163,12 @@ const Header = () => {
               ))}
               <div className="flex flex-col gap-2 mt-4 px-4">
                 {user ? (
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
+                  <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard")}>
                     <User className="w-4 h-4 mr-2" />
                     Личный кабинет
                   </Button>
                 ) : (
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>
+                  <Button variant="outline" className="w-full" onClick={() => router.push("/auth")}>
                     Войти
                   </Button>
                 )}

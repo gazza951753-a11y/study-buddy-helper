@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,8 +46,8 @@ const deadlines = [
 ];
 
 const Payment = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   
   const [workType, setWorkType] = useState(searchParams.get("type") || "");
@@ -172,7 +172,7 @@ const Payment = () => {
           <p className="text-muted-foreground mb-6">
             Спасибо за заказ! Мы свяжемся с вами в ближайшее время для уточнения деталей.
           </p>
-          <Button onClick={() => navigate("/")} variant="hero" className="w-full">
+          <Button onClick={() => router.push("/")} variant="hero" className="w-full">
             Вернуться на главную
           </Button>
         </motion.div>
@@ -185,7 +185,7 @@ const Payment = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">Оплата заказа</h1>

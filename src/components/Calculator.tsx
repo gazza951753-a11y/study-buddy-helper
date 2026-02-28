@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -42,7 +42,7 @@ const deadlines = [
 ];
 
 const Calculator = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [workType, setWorkType] = useState("");
   const [subject, setSubject] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -153,7 +153,7 @@ const Calculator = () => {
           if (workType) params.set("type", workType);
           if (subject) params.set("subject", subject);
           if (deadline) params.set("deadline", deadline);
-          navigate(`/payment?${params.toString()}`);
+          router.push(`/payment?${params.toString()}`);
         }}
       >
         Оформить заказ

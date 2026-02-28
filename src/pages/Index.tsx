@@ -1,3 +1,5 @@
+"use client";
+
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import USPSection from "@/components/USPSection";
@@ -7,7 +9,6 @@ import FAQSection from "@/components/FAQSection";
 import ReferralSection from "@/components/ReferralSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
-import { Helmet } from "react-helmet";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
@@ -49,16 +50,6 @@ const StickySection = ({
 const Index = () => {
   return (
     <>
-      <Helmet>
-        <title>StudyAssist — Помощь студентам с учебными работами | Курсовые, дипломы, рефераты</title>
-        <meta
-          name="description"
-          content="Профессиональная помощь студентам с курсовыми, дипломными работами, рефератами и контрольными. Гарантия уникальности от 70%, точные сроки, бесплатные доработки. studyassist.ru"
-        />
-        <meta name="keywords" content="помощь студентам, курсовая работа, дипломная работа, реферат, контрольная, заказать курсовую, studyassist" />
-        <link rel="canonical" href="https://studyassist.ru" />
-      </Helmet>
-      
       <div className="min-h-screen bg-background">
         <Header />
         <main>

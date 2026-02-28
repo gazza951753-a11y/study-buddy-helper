@@ -1,3 +1,4 @@
+"use client";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ const reviews = [
 
 const Avatar = ({ avatarFile, initials }: { avatarFile: string; initials: string }) => {
   const [failed, setFailed] = useState(false);
-  const src = `${import.meta.env.BASE_URL}avatars/${avatarFile}`;
+  const src = `/avatars/${avatarFile}`;
   if (!failed) {
     return (
       <img

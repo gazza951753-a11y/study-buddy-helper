@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +24,8 @@ const loginSchema = z.object({
 });
 
 const Auth = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,19 +48,20 @@ const Auth = () => {
 
   useEffect(() => {
     // Handle redirect from Dashboard when email is not confirmed
-    const state = location.state as { emailNotConfirmed?: boolean; email?: string } | null;
-    if (state?.emailNotConfirmed && state?.email) {
-      setPendingEmail(state.email);
+    const emailNotConfirmed = searchParams.get("emailNotConfirmed");
+    const emailParam = searchParams.get("email");
+    if (emailNotConfirmed && emailParam) {
+      setPendingEmail(emailParam);
       toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
-      navigate(location.pathname, { replace: true, state: {} });
+      router.replace("/auth");
     }
-  }, [location, navigate]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     // Redirect already-authenticated users away from the auth page
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        navigate("/dashboard", { replace: true });
+        router.replace("/dashboard");
       }
     });
 
@@ -69,13 +70,13 @@ const Auth = () => {
         // Only auto-redirect on SIGNED_IN from external triggers (e.g. email confirmation link)
         // Normal sign-in/sign-up navigates explicitly after the form submit
         if (event === "SIGNED_IN" && session?.user) {
-          navigate("/dashboard", { replace: true });
+          router.replace("/dashboard");
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -129,7 +130,7 @@ const Auth = () => {
         }
 
         toast.success("Успешный вход!");
-        navigate("/dashboard");
+        router.push("/dashboard");
       } else {
         if (!agreementAccepted) {
           toast.error("Необходимо принять пользовательское соглашение");
@@ -175,7 +176,7 @@ const Auth = () => {
         if (signUpData.session) {
           // Подтверждение email отключено — пользователь сразу авторизован
           toast.success("Регистрация успешна!");
-          navigate("/dashboard");
+          router.push("/dashboard");
         } else {
           // Подтверждение email включено — показываем экран "проверьте почту"
           setPendingEmail(formData.email);
@@ -262,7 +263,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => router.push("/")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,8 +109,9 @@ const STATUS_COLORS: Record<string, string> = {
 // ─── component ────────────────────────────────────────────────────────────────
 
 const OrderDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
@@ -129,7 +130,7 @@ const OrderDetail = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { navigate("/auth"); return; }
+      if (!session?.user) { router.push("/auth"); return; }
 
       const { data: p } = await supabase
         .from("profiles")
@@ -137,14 +138,14 @@ const OrderDetail = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (!p) { navigate("/dashboard"); return; }
+      if (!p) { router.push("/dashboard"); return; }
       setProfile(p as Profile);
 
       await loadOrder();
       setLoading(false);
     };
     init();
-  }, [id, navigate]);
+  }, [id, router]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -176,7 +177,7 @@ const OrderDetail = () => {
       .eq("id", id)
       .maybeSingle();
 
-    if (error || !data) { toast.error("Заказ не найден"); navigate("/dashboard"); return; }
+    if (error || !data) { toast.error("Заказ не найден"); router.push("/dashboard"); return; }
     setOrder(data as unknown as Order);
     await loadMessages();
   };
@@ -259,7 +260,7 @@ const OrderDetail = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/");
+    router.push("/");
   };
 
   // ── render helpers ────────────────────────────────────────────────────────────
@@ -368,7 +369,7 @@ const OrderDetail = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => router.push("/dashboard")}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />

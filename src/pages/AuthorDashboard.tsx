@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,7 +115,7 @@ interface Stats {
 // ─── component ────────────────────────────────────────────────────────────────
 
 const AuthorDashboard = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
@@ -135,7 +135,7 @@ const AuthorDashboard = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { navigate("/auth"); return; }
+      if (!session?.user) { router.push("/auth"); return; }
 
       const { data: p } = await supabase
         .from("profiles")
@@ -143,8 +143,8 @@ const AuthorDashboard = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (!p) { navigate("/auth"); return; }
-      if (p.role === "student") { navigate("/student-dashboard"); return; }
+      if (!p) { router.push("/auth"); return; }
+      if (p.role === "student") { router.push("/student-dashboard"); return; }
 
       setProfile(p as Profile);
       setEditData({
@@ -164,12 +164,12 @@ const AuthorDashboard = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session?.user) navigate("/auth");
+      if (!session?.user) router.push("/auth");
     });
 
     init();
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [router]);
 
   const fetchAvailableOrders = async () => {
     const { data } = await supabase
@@ -200,7 +200,7 @@ const AuthorDashboard = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Вы вышли из системы");
-    navigate("/");
+    router.push("/");
   };
 
   const handleSaveProfile = async () => {
@@ -357,7 +357,7 @@ const AuthorDashboard = () => {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="border border-border rounded-xl p-4 hover:border-primary/40 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/order/${order.id}`)}
+                          onClick={() => router.push(`/order?id=${order.id}`)}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -423,7 +423,7 @@ const AuthorDashboard = () => {
                           </h2>
                           <div className="space-y-3">
                             {activeMyOrders.map(order => (
-                              <OrderCard key={order.id} order={order} onClick={() => navigate(`/order/${order.id}`)} />
+                              <OrderCard key={order.id} order={order} onClick={() => router.push(`/order?id=${order.id}`)} />
                             ))}
                           </div>
                         </div>
@@ -436,7 +436,7 @@ const AuthorDashboard = () => {
                           </h2>
                           <div className="space-y-3">
                             {completedMyOrders.map(order => (
-                              <OrderCard key={order.id} order={order} onClick={() => navigate(`/order/${order.id}`)} />
+                              <OrderCard key={order.id} order={order} onClick={() => router.push(`/order?id=${order.id}`)} />
                             ))}
                           </div>
                         </div>
