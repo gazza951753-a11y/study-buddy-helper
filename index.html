@@ -45,6 +45,68 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="StudyAssist — помощь студентам с учебными работами" />
     <meta name="twitter:description" content="Курсовые, дипломные, рефераты, контрольные. Гарантия качества и уникальности." />
+    <meta name="twitter:image" content="https://studyassist.ru/og-image.png" />
+
+    <!-- OG Image -->
+    <meta property="og:image" content="https://studyassist.ru/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="StudyAssist — помощь студентам с учебными работами" />
+
+    <!-- JSON-LD: Organization + Service -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://studyassist.ru/#organization",
+          "name": "StudyAssist",
+          "url": "https://studyassist.ru/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://studyassist.ru/favicon.svg"
+          },
+          "description": "Профессиональная помощь студентам с учебными работами: курсовые, дипломные, рефераты, контрольные.",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": "Russian"
+          }
+        },
+        {
+          "@type": "Service",
+          "@id": "https://studyassist.ru/#service",
+          "name": "Помощь студентам с учебными работами",
+          "provider": { "@id": "https://studyassist.ru/#organization" },
+          "serviceType": "Образовательные услуги",
+          "description": "Курсовые, дипломные работы, рефераты, контрольные. Гарантия уникальности от 70%, точные сроки, бесплатные доработки.",
+          "areaServed": {
+            "@type": "Country",
+            "name": "Russia"
+          },
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Виды учебных работ",
+            "itemListElement": [
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Курсовая работа" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Дипломная работа" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Реферат" } },
+              { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Контрольная работа" } }
+            ]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://studyassist.ru/#website",
+          "url": "https://studyassist.ru/",
+          "name": "StudyAssist",
+          "inLanguage": "ru",
+          "publisher": { "@id": "https://studyassist.ru/#organization" }
+        }
+      ]
+    }
+    </script>
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
