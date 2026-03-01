@@ -5,5 +5,8 @@ Disallow: /dashboard
 Disallow: /student-dashboard
 Disallow: /author-dashboard
 Disallow: /order/
+Disallow: /payment
+Disallow: /auth
+Disallow: /email-confirmed
 
 Sitemap: https://studyassist.ru/sitemap.xml
