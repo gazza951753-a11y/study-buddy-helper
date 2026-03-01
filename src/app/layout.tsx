@@ -35,6 +35,14 @@ export const metadata: Metadata = {
     description: "Курсовые, дипломные, рефераты, контрольные. Гарантия качества и уникальности.",
     images: ["https://studyassist.ru/og-image.png"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "256x256" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/favicon.svg",
+  },
 };
 
 const jsonLd = {
