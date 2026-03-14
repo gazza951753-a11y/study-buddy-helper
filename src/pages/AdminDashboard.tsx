@@ -38,6 +38,9 @@ import {
   Shield,
   ShieldCheck,
   ShieldOff,
+  Star,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 type Profile = {
@@ -67,6 +70,15 @@ type OrderRow = {
 };
 
 type FaqItem = { question: string; answer: string };
+
+type UserReview = {
+  name: string;
+  role: string;
+  rating: number;
+  text: string;
+  date: string;
+  approved: boolean;
+};
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending_payment: "Ожидает оплаты",
@@ -122,6 +134,10 @@ const AdminDashboard = () => {
   const [isAddingFaq, setIsAddingFaq] = useState(false);
   const [faqLoading, setFaqLoading] = useState(false);
 
+  // User reviews
+  const [userReviews, setUserReviews] = useState<UserReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
   // Auth + admin check
   useEffect(() => {
     const check = async () => {
@@ -156,6 +172,7 @@ const AdminDashboard = () => {
       loadUsers();
       loadOrders();
       loadFaq();
+      loadUserReviews();
     }
   }, [loading]);
 
@@ -233,6 +250,46 @@ const AdminDashboard = () => {
       .maybeSingle();
     if (data?.value) setFaqItems(data.value as FaqItem[]);
     setFaqLoading(false);
+  };
+
+  const loadUserReviews = async () => {
+    setReviewsLoading(true);
+    const { data } = await supabase
+      .from("site_content")
+      .select("value")
+      .eq("key", "user_reviews")
+      .maybeSingle();
+    if (data?.value && Array.isArray(data.value)) {
+      setUserReviews(data.value as UserReview[]);
+    }
+    setReviewsLoading(false);
+  };
+
+  const handleReviewApprove = async (idx: number, approved: boolean) => {
+    const updated = userReviews.map((r, i) => i === idx ? { ...r, approved } : r);
+    const { error } = await supabase.from("site_content").upsert({
+      key: "user_reviews",
+      label: "Отзывы пользователей",
+      value: updated as unknown as Json,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) { toast.error("Ошибка обновления"); return; }
+    setUserReviews(updated);
+    toast.success(approved ? "Отзыв одобрен" : "Отзыв скрыт");
+  };
+
+  const handleReviewDelete = async (idx: number) => {
+    if (!confirm("Удалить этот отзыв?")) return;
+    const updated = userReviews.filter((_, i) => i !== idx);
+    const { error } = await supabase.from("site_content").upsert({
+      key: "user_reviews",
+      label: "Отзывы пользователей",
+      value: updated as unknown as Json,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) { toast.error("Ошибка удаления"); return; }
+    setUserReviews(updated);
+    toast.success("Отзыв удалён");
   };
 
   // ---------- Actions ----------
@@ -373,6 +430,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="content" className="gap-2">
               <FileText className="w-4 h-4" />
               Контент (FAQ)
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="gap-2">
+              <Star className="w-4 h-4" />
+              Отзывы
             </TabsTrigger>
           </TabsList>
 
@@ -696,6 +757,72 @@ const AdminDashboard = () => {
                       )
                     )}
                   </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* ── USER REVIEWS ── */}
+          <TabsContent value="reviews">
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Отзывы пользователей{" "}
+                  <span className="text-muted-foreground font-normal text-base">
+                    ({userReviews.length})
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reviewsLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+                ) : userReviews.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Пока нет отзывов от пользователей
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userReviews.map((review, idx) => (
+                      <div key={idx} className={`border rounded-lg p-4 space-y-2 ${review.approved ? "border-green-200 bg-green-50/30" : "border-border"}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-foreground">{review.name}</span>
+                              <span className="text-xs text-muted-foreground">{review.role}</span>
+                              <span className="text-xs text-muted-foreground">· {review.date}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${review.approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                                {review.approved ? "Одобрен" : "На модерации"}
+                              </span>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[1,2,3,4,5].map(i => (
+                                <Star key={i} className={`w-4 h-4 ${i <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                              ))}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{review.text}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={review.approved ? "Скрыть" : "Одобрить"}
+                              className={review.approved ? "text-yellow-600 hover:text-yellow-700" : "text-green-600 hover:text-green-700"}
+                              onClick={() => handleReviewApprove(idx, !review.approved)}
+                            >
+                              {review.approved ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleReviewDelete(idx)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -6,7 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, Eye, EyeOff, ArrowLeft, BookOpen, PenLine, Mail, RefreshCw } from "lucide-react";
+import {
+  GraduationCap,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  BookOpen,
+  PenLine,
+  Mail,
+  RefreshCw,
+  KeyRound,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import UserAgreementDialog from "@/components/UserAgreementDialog";
@@ -24,18 +35,20 @@ const loginSchema = z.object({
   password: z.string().min(1, "Введите пароль"),
 });
 
+type Mode = "login" | "signup" | "forgot" | "forgot-sent";
+
 const Auth = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"student" | "author">("student");
-  // "check your email" screen state
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   const [formData, setFormData] = useState({
     username: "",
@@ -48,7 +61,6 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Handle redirect from Dashboard when email is not confirmed
     const emailNotConfirmed = searchParams.get("emailNotConfirmed");
     const emailParam = searchParams.get("email");
     if (emailNotConfirmed && emailParam) {
@@ -59,23 +71,12 @@ const Auth = () => {
   }, [searchParams, router]);
 
   useEffect(() => {
-    // Redirect already-authenticated users away from the auth page
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        router.replace("/dashboard");
-      }
+      if (session?.user) router.replace("/dashboard");
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Only auto-redirect on SIGNED_IN from external triggers (e.g. email confirmation link)
-        // Normal sign-in/sign-up navigates explicitly after the form submit
-        if (event === "SIGNED_IN" && session?.user) {
-          router.replace("/dashboard");
-        }
-      }
-    );
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) router.replace("/dashboard");
+    });
     return () => subscription.unsubscribe();
   }, [router]);
 
@@ -91,7 +92,7 @@ const Auth = () => {
     setErrors({});
 
     try {
-      if (isLogin) {
+      if (mode === "login") {
         const result = loginSchema.safeParse(formData);
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
@@ -112,7 +113,7 @@ const Auth = () => {
           if (error.message.includes("Invalid login credentials")) {
             toast.error("Неверный email или пароль");
           } else if (error.message.includes("Email not confirmed")) {
-            toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
+            toast.error("Email не подтверждён. Проверьте почту.");
             setPendingEmail(formData.email);
           } else {
             toast.error(error.message);
@@ -121,10 +122,9 @@ const Auth = () => {
           return;
         }
 
-        // Extra safety: block entry if email is not confirmed
         if (!loginData.user?.email_confirmed_at) {
           await supabase.auth.signOut();
-          toast.error("Email не подтверждён. Проверьте почту и перейдите по ссылке из письма.");
+          toast.error("Email не подтверждён. Проверьте почту.");
           setPendingEmail(formData.email);
           setLoading(false);
           return;
@@ -132,7 +132,7 @@ const Auth = () => {
 
         toast.success("Успешный вход!");
         router.push("/dashboard");
-      } else {
+      } else if (mode === "signup") {
         if (!agreementAccepted) {
           toast.error("Необходимо принять пользовательское соглашение");
           setLoading(false);
@@ -175,11 +175,9 @@ const Auth = () => {
         }
 
         if (signUpData.session) {
-          // Подтверждение email отключено — пользователь сразу авторизован
           toast.success("Регистрация успешна!");
           router.push("/dashboard");
         } else {
-          // Подтверждение email включено — показываем экран "проверьте почту"
           setPendingEmail(formData.email);
         }
       }
@@ -187,6 +185,24 @@ const Auth = () => {
       toast.error("Произошла ошибка");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.includes("@")) {
+      toast.error("Введите корректный email");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Ошибка: " + error.message);
+    } else {
+      setMode("forgot-sent");
     }
   };
 
@@ -206,19 +222,17 @@ const Auth = () => {
     }
   };
 
-  // "Check your email" screen
+  // ── "Check your email" screen ──
   if (pendingEmail) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-card rounded-2xl shadow-lg border border-border p-8 flex flex-col items-center text-center gap-6">
+          <div className="bg-card rounded-3xl shadow-elegant border border-border/50 p-8 flex flex-col items-center text-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-primary-foreground" />
+              <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-foreground">
-                Study<span className="text-primary">Assist</span>
-              </span>
+              <span className="text-xl font-bold">Study<span className="text-gradient">Assist</span></span>
             </div>
 
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
@@ -226,9 +240,7 @@ const Auth = () => {
             </div>
 
             <div>
-              <h1 className="text-xl font-bold text-foreground mb-2">
-                Подтвердите email
-              </h1>
+              <h1 className="text-xl font-bold text-foreground mb-2">Подтвердите email</h1>
               <p className="text-muted-foreground leading-relaxed text-sm">
                 Письмо с ссылкой для активации отправлено на{" "}
                 <span className="font-semibold text-foreground">{pendingEmail}</span>.
@@ -241,7 +253,7 @@ const Auth = () => {
                 type="button"
                 onClick={handleResend}
                 disabled={resendLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${resendLoading ? "animate-spin" : ""}`} />
                 {resendLoading ? "Отправляем..." : "Отправить письмо повторно"}
@@ -260,6 +272,97 @@ const Auth = () => {
     );
   }
 
+  // ── Forgot password sent ──
+  if (mode === "forgot-sent") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-card rounded-3xl shadow-elegant border border-border/50 p-8 flex flex-col items-center text-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10 text-success" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground mb-2">Письмо отправлено!</h1>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Проверьте почту <span className="font-semibold text-foreground">{forgotEmail}</span>{" "}
+                и перейдите по ссылке для сброса пароля.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => { setMode("login"); setForgotEmail(""); }}
+            >
+              Вернуться к входу
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Forgot password form ──
+  if (mode === "forgot") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <button
+            onClick={() => setMode("login")}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Вернуться к входу
+          </button>
+
+          <div className="bg-card rounded-3xl shadow-elegant border border-border/50 p-8">
+            {/* Logo */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold">Study<span className="text-gradient">Assist</span></span>
+            </div>
+
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <KeyRound className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Сброс пароля</h2>
+              <p className="text-muted-foreground text-sm">
+                Введите ваш email — мы отправим ссылку для создания нового пароля
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <Label htmlFor="forgot-email">Email *</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="hero"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Отправляем..." : "Отправить ссылку"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main login / signup form ──
+  const isLogin = mode === "login";
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -271,35 +374,33 @@ const Auth = () => {
           На главную
         </button>
 
-        <div className="bg-card rounded-2xl shadow-lg border border-border p-8">
+        <div className="bg-card rounded-3xl shadow-elegant border border-border/50 p-8">
           {/* Logo */}
           <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-foreground">
-              Study<span className="text-primary">Assist</span>
-            </span>
+            <span className="text-xl font-bold">Study<span className="text-gradient">Assist</span></span>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
             <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+              onClick={() => setMode("login")}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 isLogin
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Вход
             </button>
             <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+              onClick={() => setMode("signup")}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 !isLogin
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Регистрация
@@ -307,7 +408,7 @@ const Auth = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Role selection — only on registration */}
+            {/* Role selection */}
             {!isLogin && (
               <div>
                 <Label className="mb-2 block">Я регистрируюсь как *</Label>
@@ -323,9 +424,7 @@ const Auth = () => {
                   >
                     <BookOpen className="w-6 h-6" />
                     <span className="font-medium text-sm">Студент</span>
-                    <span className="text-xs text-center leading-tight opacity-70">
-                      Заказываю работы
-                    </span>
+                    <span className="text-xs text-center leading-tight opacity-70">Заказываю работы</span>
                   </button>
                   <button
                     type="button"
@@ -338,9 +437,7 @@ const Auth = () => {
                   >
                     <PenLine className="w-6 h-6" />
                     <span className="font-medium text-sm">Автор</span>
-                    <span className="text-xs text-center leading-tight opacity-70">
-                      Выполняю работы
-                    </span>
+                    <span className="text-xs text-center leading-tight opacity-70">Выполняю работы</span>
                   </button>
                 </div>
               </div>
@@ -357,9 +454,7 @@ const Auth = () => {
                   placeholder="Ваш логин"
                   className={errors.username ? "border-destructive" : ""}
                 />
-                {errors.username && (
-                  <p className="text-destructive text-sm mt-1">{errors.username}</p>
-                )}
+                {errors.username && <p className="text-destructive text-sm mt-1">{errors.username}</p>}
               </div>
             )}
 
@@ -374,13 +469,22 @@ const Auth = () => {
                 placeholder="your@email.com"
                 className={errors.email ? "border-destructive" : ""}
               />
-              {errors.email && (
-                <p className="text-destructive text-sm mt-1">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <Label htmlFor="password">Пароль *</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="password">Пароль *</Label>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode("forgot"); setForgotEmail(formData.email); }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Забыли пароль?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Input
                   id="password"
@@ -399,9 +503,7 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-destructive text-sm mt-1">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
             </div>
 
             {!isLogin && (
@@ -417,7 +519,6 @@ const Auth = () => {
                     placeholder="+7 (999) 123-45-67"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="telegram_username">Telegram (необязательно)</Label>
                   <Input
@@ -428,7 +529,6 @@ const Auth = () => {
                     placeholder="@username"
                   />
                 </div>
-
                 <div className="flex items-start gap-3 pt-2">
                   <Checkbox
                     id="agreement"
@@ -450,12 +550,7 @@ const Auth = () => {
               </>
             )}
 
-            <Button
-              type="submit"
-              variant="hero"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" variant="hero" className="w-full" disabled={loading}>
               {loading ? "Загрузка..." : isLogin ? "Войти" : "Зарегистрироваться"}
             </Button>
           </form>
