@@ -321,7 +321,7 @@ const HeroSection = () => {
               className="absolute -top-4 -right-4 bg-card rounded-2xl px-4 py-3 shadow-elegant border border-border/50 hidden sm:flex items-center gap-2"
             >
               <div className="w-2.5 h-2.5 bg-success rounded-full animate-pulse" />
-              <span className="text-sm font-semibold text-foreground">500+ авторов онлайн</span>
+              <span className="text-sm font-semibold text-foreground">Принимаем заявки</span>
             </motion.div>
 
             {/* Floating badge — bottom left */}

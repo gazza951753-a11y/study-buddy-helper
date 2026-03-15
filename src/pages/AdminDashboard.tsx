@@ -41,6 +41,7 @@ import {
   Star,
   CheckCircle2,
   XCircle,
+  Loader2,
 } from "lucide-react";
 
 type Profile = {
@@ -63,8 +64,13 @@ type OrderRow = {
   price: number;
   status: string;
   created_at: string;
-  student_id: string;
+  student_id: string | null;
   author_id: string | null;
+  title: string | null;
+  attachment_urls: string[] | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_telegram: string | null;
   student?: { username: string; email: string };
   author?: { username: string } | null;
 };
@@ -81,14 +87,27 @@ type UserReview = {
 };
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
+  new:             "Новая заявка",
   pending_payment: "Ожидает оплаты",
-  paid: "Оплачен",
-  in_progress: "В работе",
-  review: "На проверке",
-  revision: "Доработка",
-  completed: "Завершён",
-  cancelled: "Отменён",
-  disputed: "Спор",
+  paid:            "Оплачен",
+  in_progress:     "В работе",
+  review:          "На проверке",
+  revision:        "Доработка",
+  completed:       "Завершён",
+  cancelled:       "Отменён",
+  disputed:        "Спор",
+};
+
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  new:             "bg-blue-100 text-blue-700",
+  pending_payment: "bg-yellow-100 text-yellow-700",
+  paid:            "bg-green-100 text-green-700",
+  in_progress:     "bg-purple-100 text-purple-700",
+  review:          "bg-orange-100 text-orange-700",
+  revision:        "bg-red-100 text-red-700",
+  completed:       "bg-emerald-100 text-emerald-700",
+  cancelled:       "bg-gray-100 text-gray-600",
+  disputed:        "bg-red-200 text-red-800",
 };
 
 const WORK_TYPE_LABELS: Record<string, string> = {
@@ -137,6 +156,12 @@ const AdminDashboard = () => {
   // User reviews
   const [userReviews, setUserReviews] = useState<UserReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Payment link generation per order
+  const [payPrices,   setPayPrices]   = useState<Record<string, string>>({});
+  const [payLinks,    setPayLinks]    = useState<Record<string, string>>({});
+  const [payLoading,  setPayLoading]  = useState<Record<string, boolean>>({});
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   // Auth + admin check
   useEffect(() => {
@@ -220,7 +245,7 @@ const AdminDashboard = () => {
 
     const profileMap = new Map((profilesData || []).map((p) => [p.id, p]));
 
-    const enriched: OrderRow[] = ordersData.map((o) => ({
+    const enriched: OrderRow[] = (ordersData as any[]).map((o) => ({
       ...o,
       student: profileMap.get(o.student_id) as { username: string; email: string } | undefined,
       author: o.author_id
@@ -292,6 +317,42 @@ const AdminDashboard = () => {
     toast.success("Отзыв удалён");
   };
 
+  // Generate YooKassa payment link for order
+  const handleGeneratePayLink = async (order: OrderRow) => {
+    const priceStr = payPrices[order.id];
+    const amount   = parseInt(priceStr, 10);
+    if (!amount || amount < 1) {
+      toast.error("Введите корректную сумму (минимум 1 ₽)");
+      return;
+    }
+
+    setPayLoading(prev => ({ ...prev, [order.id]: true }));
+
+    try {
+      // Save price to order
+      await supabase.from("orders").update({ price: amount, status: "pending_payment" }).eq("id", order.id);
+
+      const workLabel = WORK_TYPE_LABELS[order.work_type] || order.work_type;
+      const clientName = order.contact_name || order.student?.username || "Клиент";
+      const description = `${workLabel} — ${order.subject} (${clientName})`.substring(0, 128);
+      const returnUrl = `${window.location.origin}/student-dashboard?payment=success&order=${order.id}`;
+
+      const { data, error } = await supabase.functions.invoke("yookassa-payment", {
+        body: { amount, description, orderId: order.id, returnUrl },
+      });
+
+      if (error || !data?.confirmationUrl) throw new Error(error?.message || "Не удалось создать ссылку");
+
+      setPayLinks(prev => ({ ...prev, [order.id]: data.confirmationUrl }));
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, price: amount, status: "pending_payment" } : o));
+      toast.success("Ссылка создана! Скопируйте и отправьте заказчику.");
+    } catch (e: any) {
+      toast.error("Ошибка: " + e.message);
+    } finally {
+      setPayLoading(prev => ({ ...prev, [order.id]: false }));
+    }
+  };
+
   // ---------- Actions ----------
 
   const handleRoleChange = async (profileId: string, newRole: "student" | "author") => {
@@ -329,9 +390,8 @@ const AdminDashboard = () => {
   };
 
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus as "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed" })
+    const { error } = await (supabase.from("orders") as any)
+      .update({ status: newStatus })
       .eq("id", orderId);
     if (error) { toast.error("Ошибка при смене статуса"); return; }
     toast.success("Статус обновлён");
@@ -548,64 +608,134 @@ const AdminDashboard = () => {
                 {ordersLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ID</TableHead>
-                          <TableHead>Тип</TableHead>
-                          <TableHead>Предмет</TableHead>
-                          <TableHead>Цена</TableHead>
-                          <TableHead>Студент</TableHead>
-                          <TableHead>Автор</TableHead>
-                          <TableHead>Статус</TableHead>
-                          <TableHead>Дата</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orders.map((order) => (
-                          <TableRow key={order.id}>
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              {order.id.slice(0, 8)}…
-                            </TableCell>
-                            <TableCell>
-                              {WORK_TYPE_LABELS[order.work_type] || order.work_type}
-                            </TableCell>
-                            <TableCell>{order.subject}</TableCell>
-                            <TableCell className="font-medium">
-                              {order.price.toLocaleString("ru-RU")} ₽
-                            </TableCell>
-                            <TableCell>
-                              <div>{order.student?.username || "—"}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {order.student?.email}
-                              </div>
-                            </TableCell>
-                            <TableCell>{order.author?.username || "—"}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={order.status}
-                                onValueChange={(v) => handleOrderStatusChange(order.id, v)}
-                              >
-                                <SelectTrigger className="w-40">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
-                                    <SelectItem key={value} value={value}>
-                                      {label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                  <div className="space-y-4">
+                    {orders.map((order) => {
+                      const isExpanded = expandedOrder === order.id;
+                      const payLink = payLinks[order.id];
+                      const isPayLoading = payLoading[order.id];
+                      const statusColor = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-600";
+
+                      return (
+                        <div key={order.id} className="border border-border rounded-xl overflow-hidden">
+                          {/* Header row */}
+                          <div
+                            className="flex flex-wrap items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                            onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                          >
+                            <span className="font-mono text-xs text-muted-foreground shrink-0">#{order.id.slice(0, 8)}</span>
+                            <span className="font-semibold text-foreground">{WORK_TYPE_LABELS[order.work_type] || order.work_type}</span>
+                            <span className="text-muted-foreground text-sm">{order.subject}</span>
+                            <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${statusColor}`}>
+                              {ORDER_STATUS_LABELS[order.status] || order.status}
+                            </span>
+                            <span className="text-xs text-muted-foreground shrink-0">
                               {new Date(order.created_at).toLocaleDateString("ru-RU")}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                            </span>
+                          </div>
+
+                          {/* Expanded details */}
+                          {isExpanded && (
+                            <div className="border-t border-border p-4 bg-muted/20 space-y-5">
+                              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* Contact info */}
+                                <div className="bg-card rounded-xl p-4 border border-border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Контакт заказчика</p>
+                                  <div className="space-y-1.5 text-sm">
+                                    {order.contact_name     && <div><span className="text-muted-foreground">Имя: </span><span className="font-medium">{order.contact_name}</span></div>}
+                                    {order.contact_phone    && <div><span className="text-muted-foreground">Телефон: </span><span className="font-medium">{order.contact_phone}</span></div>}
+                                    {order.contact_telegram && <div><span className="text-muted-foreground">Telegram: </span><a href={`https://t.me/${order.contact_telegram.replace("@","")}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">{order.contact_telegram}</a></div>}
+                                    {order.student?.email   && <div><span className="text-muted-foreground">Email: </span><span className="font-medium">{order.student.email}</span></div>}
+                                    {!order.contact_name && !order.contact_phone && !order.contact_telegram && !order.student?.email && (
+                                      <span className="text-muted-foreground italic">Нет данных</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Order details */}
+                                <div className="bg-card rounded-xl p-4 border border-border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Детали заказа</p>
+                                  <div className="space-y-1.5 text-sm">
+                                    <div><span className="text-muted-foreground">Предмет: </span><span className="font-medium">{order.subject}</span></div>
+                                    <div><span className="text-muted-foreground">Срок: </span><span className="font-medium">{(order as any).deadline_days} дн.</span></div>
+                                    {order.title && <div><span className="text-muted-foreground">Тема: </span><span className="font-medium">{order.title}</span></div>}
+                                    {order.price > 0 && <div><span className="text-muted-foreground">Сумма: </span><span className="font-bold text-primary">{order.price.toLocaleString("ru-RU")} ₽</span></div>}
+                                    {order.attachment_urls && order.attachment_urls.length > 0 && (
+                                      <div>
+                                        <span className="text-muted-foreground">Файлы: </span>
+                                        {order.attachment_urls.map((url, i) => (
+                                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs mr-2">
+                                            Файл {i + 1}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Status change */}
+                                <div className="bg-card rounded-xl p-4 border border-border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Статус</p>
+                                  <Select value={order.status} onValueChange={(v) => handleOrderStatusChange(order.id, v)}>
+                                    <SelectTrigger className="w-full h-9 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Payment link generation */}
+                              <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 space-y-3">
+                                <p className="text-sm font-semibold text-foreground">Создать ссылку для оплаты</p>
+                                <div className="flex gap-3 items-start">
+                                  <div className="flex-1">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      placeholder="Сумма в рублях"
+                                      value={payPrices[order.id] || ""}
+                                      onChange={e => setPayPrices(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                      className="h-10"
+                                    />
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="hero"
+                                    onClick={() => handleGeneratePayLink(order)}
+                                    disabled={isPayLoading}
+                                    className="h-10 shrink-0"
+                                  >
+                                    {isPayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Создать ссылку"}
+                                  </Button>
+                                </div>
+
+                                {payLink && (
+                                  <div className="bg-card rounded-lg p-3 border border-border space-y-2">
+                                    <p className="text-xs text-muted-foreground font-medium">Ссылка для заказчика:</p>
+                                    <div className="flex gap-2 items-center">
+                                      <code className="text-xs text-primary break-all flex-1 bg-primary/5 p-2 rounded">{payLink}</code>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="shrink-0 h-8 text-xs"
+                                        onClick={() => { navigator.clipboard.writeText(payLink); toast.success("Скопировано!"); }}
+                                      >
+                                        Копировать
+                                      </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Отправьте эту ссылку заказчику в Telegram / WhatsApp</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
