@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
+import { Json, Database } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -390,8 +390,8 @@ const AdminDashboard = () => {
   };
 
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
-    const { error } = await (supabase.from("orders") as any)
-      .update({ status: newStatus })
+    const { error } = await supabase.from("orders")
+      .update({ status: newStatus as Database["public"]["Tables"]["orders"]["Row"]["status"] })
       .eq("id", orderId);
     if (error) { toast.error("Ошибка при смене статуса"); return; }
     toast.success("Статус обновлён");

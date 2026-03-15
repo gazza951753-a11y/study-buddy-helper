@@ -90,7 +90,7 @@ export type Database = {
       orders: {
         Row: {
           id: string
-          student_id: string
+          student_id: string | null
           author_id: string | null
           work_type: string
           subject: string
@@ -101,6 +101,7 @@ export type Database = {
           payment_id: string | null
           payment_status: string | null
           status:
+            | "new"
             | "pending_payment"
             | "paid"
             | "in_progress"
@@ -109,6 +110,10 @@ export type Database = {
             | "completed"
             | "cancelled"
             | "disputed"
+          contact_name: string | null
+          contact_phone: string | null
+          contact_telegram: string | null
+          attachment_urls: string[] | null
           deadline_date: string | null
           accepted_at: string | null
           submitted_at: string | null
@@ -120,17 +125,21 @@ export type Database = {
         }
         Insert: {
           id?: string
-          student_id: string
+          student_id?: string | null
           author_id?: string | null
           work_type: string
           subject: string
           deadline_days: number
           title?: string | null
           description?: string | null
-          price: number
+          price?: number
           payment_id?: string | null
           payment_status?: string | null
-          status?: "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          status?: "new" | "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_telegram?: string | null
+          attachment_urls?: string[] | null
           deadline_date?: string | null
           accepted_at?: string | null
           submitted_at?: string | null
@@ -142,7 +151,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          student_id?: string
+          student_id?: string | null
           author_id?: string | null
           work_type?: string
           subject?: string
@@ -152,7 +161,11 @@ export type Database = {
           price?: number
           payment_id?: string | null
           payment_status?: string | null
-          status?: "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          status?: "new" | "pending_payment" | "paid" | "in_progress" | "review" | "revision" | "completed" | "cancelled" | "disputed"
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_telegram?: string | null
+          attachment_urls?: string[] | null
           deadline_date?: string | null
           accepted_at?: string | null
           submitted_at?: string | null
@@ -217,211 +230,28 @@ export type Database = {
           }
         ]
       }
-      order_files: {
-        Row: {
-          id: string
-          order_id: string
-          uploader_id: string
-          file_name: string
-          file_url: string
-          file_size: number | null
-          file_type: "requirement" | "result"
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          order_id: string
-          uploader_id: string
-          file_name: string
-          file_url: string
-          file_size?: number | null
-          file_type: "requirement" | "result"
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          order_id?: string
-          uploader_id?: string
-          file_name?: string
-          file_url?: string
-          file_size?: number | null
-          file_type?: "requirement" | "result"
-          created_at?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          body: string
-          is_read: boolean
-          link: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          body: string
-          is_read?: boolean
-          link?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          body?: string
-          is_read?: boolean
-          link?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
     }
-    Views: {
-      [_ in never]: never
-    }
+    Views: {}
     Functions: {
       get_author_stats: {
         Args: { p_author_id: string }
         Returns: {
           total_orders: number
           completed_orders: number
+          active_orders: number
           total_earned: number
-          avg_rating: number
+          avg_rating: number | null
         }[]
       }
     }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Enums: {}
+    CompositeTypes: {}
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"]
+export type Inserts<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"]
+export type Updates<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"]

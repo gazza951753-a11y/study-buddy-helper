@@ -213,22 +213,20 @@ const Payment = () => {
         studentId = profile?.id ?? null;
       }
 
-      // Save to DB — cast to any to work around stale generated types
-      // (migration adds: 'new' status, contact_* columns, nullable student_id)
-      const orderPayload: any = {
+      // Save to DB
+      await supabase.from("orders").insert({
         work_type:        workType,
         subject,
         deadline_days:    Number(deadline),
         title:            description || null,
         price:            0,
-        status:           "new",
+        status:           "new" as const,
         attachment_urls:  successfulUrls,
         contact_name:     contactName || null,
         contact_phone:    contactPhone || null,
         contact_telegram: contactTelegram || null,
-      };
-      if (studentId) orderPayload.student_id = studentId;
-      await (supabase.from("orders") as any).insert(orderPayload);
+        student_id:       studentId,
+      });
 
       // Notify Telegram — include file names even if upload failed, so admin knows files exist
       const allFileNames = uploadedFiles.map(f => f.file.name);
