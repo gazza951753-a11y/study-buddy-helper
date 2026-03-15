@@ -133,7 +133,7 @@ const Header = () => {
                 Войти
               </Button>
             )}
-            <Button variant="cta" size="sm">
+            <Button variant="cta" size="sm" onClick={() => router.push("/payment")}>
               Заказать работу
             </Button>
           </div>
@@ -172,7 +172,7 @@ const Header = () => {
                     Войти
                   </Button>
                 )}
-                <Button variant="cta" className="w-full">
+                <Button variant="cta" className="w-full" onClick={() => { router.push("/payment"); setIsMenuOpen(false); }}>
                   Заказать работу
                 </Button>
               </div>

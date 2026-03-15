@@ -5,23 +5,23 @@ const Footer = () => {
 
   const footerLinks = {
     services: [
-      { label: "Курсовые работы", href: "#" },
-      { label: "Дипломные работы", href: "#" },
-      { label: "Рефераты", href: "#" },
-      { label: "Контрольные работы", href: "#" },
-      { label: "Презентации", href: "#" },
+      { label: "Курсовые работы",    href: "/payment?type=coursework" },
+      { label: "Дипломные работы",   href: "/payment?type=diploma" },
+      { label: "Рефераты",           href: "/payment?type=essay" },
+      { label: "Контрольные работы", href: "/payment?type=control" },
+      { label: "Презентации",        href: "/payment?type=presentation" },
     ],
     company: [
-      { label: "О нас", href: "#" },
-      { label: "Отзывы", href: "#reviews" },
-      { label: "Блог", href: "#" },
-      { label: "Вакансии", href: "#" },
-      { label: "Контакты", href: "#contacts" },
+      { label: "О нас",      href: "/about" },
+      { label: "Отзывы",     href: "/#reviews" },
+      { label: "Блог",       href: "/blog" },
+      { label: "Вакансии",   href: "/vacancies" },
+      { label: "Контакты",   href: "/#contacts" },
     ],
     legal: [
       { label: "Политика конфиденциальности", href: "/privacy" },
       { label: "Пользовательское соглашение", href: "/terms" },
-      { label: "Оферта", href: "#" },
+      { label: "Оферта",                      href: "/offer" },
     ],
   };
 
