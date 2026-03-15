@@ -239,7 +239,7 @@ const Payment = () => {
         messageBody = (messageBody || "") + note;
       }
 
-      await supabase.functions.invoke("send-telegram", {
+      const { error: tgError, data: tgData } = await supabase.functions.invoke("send-telegram", {
         body: {
           name:            contactName || "Клиент",
           contact,
@@ -251,6 +251,14 @@ const Payment = () => {
           attachmentNames: successfulUrls.length  ? successfulNames : (allFileNames.length ? allFileNames : undefined),
         },
       });
+
+      if (tgError) {
+        console.error("Telegram function error:", tgError);
+        // Заявка сохранена в БД — всё равно показываем успех, но уведомляем
+        toast({ title: "Заявка принята, но уведомление не отправлено", description: tgError.message, variant: "destructive" });
+      } else {
+        console.log("Telegram response:", tgData);
+      }
 
       setSubmitted(true);
     } catch (err) {
