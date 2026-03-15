@@ -113,9 +113,16 @@ const Payment = () => {
   const uploadFile = useCallback(async (file: File): Promise<{ path: string; url: string } | null> => {
     const ext  = file.name.split(".").pop() || "bin";
     const path = `orders/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from("order-attachments").upload(path, file, { contentType: file.type });
-    if (error) return null;
-    const { data: signed } = await supabase.storage.from("order-attachments").createSignedUrl(path, 7 * 24 * 3600);
+    const { error: uploadError } = await supabase.storage
+      .from("order-attachments")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError.message, uploadError);
+      return null;
+    }
+    const { data: signed } = await supabase.storage
+      .from("order-attachments")
+      .createSignedUrl(path, 7 * 24 * 3600);
     return { path, url: signed?.signedUrl || "" };
   }, []);
 
@@ -131,22 +138,33 @@ const Payment = () => {
       return;
     }
 
+    // Insert placeholders at the END so indices are stable
     const placeholders: UploadedFile[] = allowed.map(f => ({ file: f, path: "", url: "", uploading: true }));
     setUploadedFiles(prev => [...prev, ...placeholders]);
 
     const results = await Promise.all(allowed.map(f => uploadFile(f).catch(() => null)));
 
     setUploadedFiles(prev => {
+      // Replace the placeholders we just added (last allowed.length entries)
       const next = [...prev];
       const start = next.length - allowed.length;
       for (let i = 0; i < allowed.length; i++) {
         const res = results[i];
         next[start + i] = res
           ? { ...next[start + i], path: res.path, url: res.url, uploading: false }
-          : { ...next[start + i], uploading: false, error: "Ошибка загрузки" };
+          : { ...next[start + i], uploading: false, error: "Ошибка загрузки. Файл будет отправлен вручную." };
       }
       return next;
     });
+
+    const failed = results.filter(r => !r).length;
+    if (failed > 0) {
+      toast({
+        title: "Не удалось загрузить файл(ы)",
+        description: "Хранилище не настроено. Прикрепите файлы в Telegram после отправки заявки.",
+        variant: "destructive",
+      });
+    }
   }, [uploadedFiles, uploadFile, toast]);
 
   const removeFile = (idx: number) => setUploadedFiles(prev => prev.filter((_, i) => i !== idx));
@@ -212,8 +230,17 @@ const Payment = () => {
       if (studentId) orderPayload.student_id = studentId;
       await (supabase.from("orders") as any).insert(orderPayload);
 
-      // Notify Telegram
+      // Notify Telegram — include file names even if upload failed, so admin knows files exist
+      const allFileNames = uploadedFiles.map(f => f.file.name);
+      const failedNames  = uploadedFiles.filter(f => f.error).map(f => f.file.name);
       const contact = [contactPhone, contactTelegram, contactEmail].filter(Boolean).join(" | ");
+
+      let messageBody = description || undefined;
+      if (failedNames.length > 0) {
+        const note = `\n\n⚠️ Файлы НЕ загружены в хранилище (запросить у клиента): ${failedNames.join(", ")}`;
+        messageBody = (messageBody || "") + note;
+      }
+
       await supabase.functions.invoke("send-telegram", {
         body: {
           name:            contactName || "Клиент",
@@ -221,9 +248,9 @@ const Payment = () => {
           workType:        workLabel,
           subject:         subjectLabel,
           deadline:        deadlineLabel,
-          message:         description || undefined,
+          message:         messageBody,
           attachmentUrls:  successfulUrls.length  ? successfulUrls  : undefined,
-          attachmentNames: successfulNames.length ? successfulNames : undefined,
+          attachmentNames: successfulUrls.length  ? successfulNames : (allFileNames.length ? allFileNames : undefined),
         },
       });
 
