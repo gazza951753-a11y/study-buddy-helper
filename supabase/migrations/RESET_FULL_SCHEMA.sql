@@ -13,12 +13,13 @@ DROP TABLE IF EXISTS public.orders           CASCADE;
 DROP TABLE IF EXISTS public.site_content     CASCADE;
 DROP TABLE IF EXISTS public.profiles         CASCADE;
 
--- Старые политики storage (на случай если бакет уже был)
-DROP POLICY IF EXISTS "Anyone can upload order attachments"           ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can read order attachments" ON storage.objects;
-DROP POLICY IF EXISTS "Service role can read all order attachments"   ON storage.objects;
+-- Старые политики storage (удаляем ВСЕ возможные варианты названий)
+DROP POLICY IF EXISTS "Anyone can upload order attachments"              ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can read order attachments"   ON storage.objects;
+DROP POLICY IF EXISTS "Service role can read all order attachments"      ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete order attachments" ON storage.objects;
-DROP POLICY IF EXISTS "Admins can read all order attachments"         ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete own uploads"       ON storage.objects;
+DROP POLICY IF EXISTS "Admins can read all order attachments"            ON storage.objects;
 
 -- ─────────────────────────────────────────────────────────────
 -- 1. profiles
