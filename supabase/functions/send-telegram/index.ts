@@ -23,6 +23,8 @@ function escapeMarkdown(text: string): string {
   return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
 }
 
+// ── Telegram helpers ──
+
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
@@ -37,7 +39,7 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   return result;
 }
 
-// Download file from URL and upload to Telegram as binary (multipart)
+// Download file from Supabase Storage and upload to Telegram as binary multipart
 async function sendTelegramDocumentBinary(
   botToken: string,
   chatId: string,
@@ -45,7 +47,6 @@ async function sendTelegramDocumentBinary(
   fileName: string,
   caption: string,
 ) {
-  // 1. Download the file from Supabase Storage
   const fileRes = await fetch(fileUrl);
   if (!fileRes.ok) {
     console.warn(`Failed to download file ${fileName}: ${fileRes.status}`);
@@ -53,7 +54,6 @@ async function sendTelegramDocumentBinary(
   }
   const fileBlob = await fileRes.blob();
 
-  // 2. Send to Telegram as multipart/form-data
   const form = new FormData();
   form.append("chat_id", chatId);
   form.append("caption", caption);
@@ -71,6 +71,55 @@ async function sendTelegramDocumentBinary(
   return result;
 }
 
+// ── Email helper (Resend) ──
+
+async function sendEmail(resendApiKey: string, data: TelegramRequest) {
+  const filesHtml = data.attachmentNames?.length
+    ? `<p><b>Вложения:</b> ${data.attachmentNames.join(", ")}</p>`
+    : "";
+
+  const html = `
+    <h2>Новая заявка с сайта StudyAssist</h2>
+    <p><b>Имя:</b> ${data.name}</p>
+    <p><b>Контакт:</b> ${data.contact}</p>
+    ${data.workType ? `<p><b>Тип работы:</b> ${data.workType}</p>` : ""}
+    ${data.subject  ? `<p><b>Предмет/тема:</b> ${data.subject}</p>`  : ""}
+    ${data.deadline ? `<p><b>Срок:</b> ${data.deadline}</p>` : ""}
+    ${data.price    ? `<p><b>Расчётная цена:</b> ${data.price}</p>`  : ""}
+    ${filesHtml}
+    ${data.message  ? `<p><b>Сообщение:</b><br>${data.message.replace(/\n/g, "<br>")}</p>` : ""}
+  `;
+
+  // Build subject
+  const parts = [data.workType, data.subject].filter(Boolean);
+  const subject = parts.length
+    ? `Новая заявка: ${parts.join(" — ")}`
+    : "Новая заявка с сайта StudyAssist";
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "StudyAssist <noreply@studyassist.ru>",
+      to: ["support@studyassist.ru"],
+      subject,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.warn("Resend email failed:", err);
+  } else {
+    console.log("Email sent via Resend");
+  }
+}
+
+// ── Main handler ──
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -78,7 +127,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+    const TELEGRAM_CHAT_ID   = Deno.env.get("TELEGRAM_CHAT_ID");
+    const RESEND_API_KEY     = Deno.env.get("RESEND_API_KEY");
 
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
       throw new Error("Telegram configuration is missing");
@@ -86,6 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const data: TelegramRequest = await req.json();
 
+    // ── 1. Telegram message ──
     let text = `📚 *Новая заявка с сайта!*\n\n`;
     text += `👤 *Имя:* ${escapeMarkdown(data.name)}\n`;
     text += `📞 *Контакт:* ${escapeMarkdown(data.contact)}\n`;
@@ -98,13 +149,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text);
 
+    // ── 2. Telegram file attachments (download + re-upload as binary) ──
     if (data.attachmentUrls?.length) {
       for (let i = 0; i < data.attachmentUrls.length; i++) {
         const fileUrl  = data.attachmentUrls[i];
         const fileName = data.attachmentNames?.[i] || `file_${i + 1}`;
-        const caption  = `📎 ${escapeMarkdown(fileName)}`;
-        await sendTelegramDocumentBinary(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, fileUrl, fileName, caption);
+        await sendTelegramDocumentBinary(
+          TELEGRAM_BOT_TOKEN,
+          TELEGRAM_CHAT_ID,
+          fileUrl,
+          fileName,
+          `📎 ${escapeMarkdown(fileName)}`,
+        );
       }
+    }
+
+    // ── 3. Email notification via Resend (non-fatal if key is missing) ──
+    if (RESEND_API_KEY) {
+      await sendEmail(RESEND_API_KEY, data);
+    } else {
+      console.warn("RESEND_API_KEY not set — skipping email notification");
     }
 
     return new Response(
